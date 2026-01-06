@@ -55,6 +55,41 @@ def cmd_pdf(args):
     )
 
 
+def cmd_script(args):
+    """Generate voiceover scripts from PDF or images."""
+    from .config import check_dependencies
+    from .scripts import generate_scripts
+
+    if not check_dependencies():
+        print("Dependencies not installed. Run: kant setup")
+        sys.exit(1)
+
+    print("=== Script Generation ===")
+
+    input_path = Path(args.input) if args.input else None
+
+    # Auto-detect PDF or images
+    if input_path is None:
+        cwd = Path.cwd()
+        pdfs = list(cwd.glob("*.pdf"))
+        if pdfs:
+            input_path = pdfs[0]
+            print(f"Auto-detected: {input_path.name}")
+        else:
+            image_dirs = [d for d in cwd.iterdir() if d.is_dir() and "images" in d.name.lower()]
+            if image_dirs:
+                input_path = image_dirs[0]
+                print(f"Auto-detected: {input_path.name}")
+            else:
+                print("No PDF or image folder found. Use --input to specify one.")
+                return
+
+    output_path = Path(args.output) if args.output else None
+    context = args.context or ""
+
+    generate_scripts(input_path, output_path=output_path, context=context)
+
+
 def cmd_audio(args):
     """Generate audio from voiceover scripts."""
     from .config import check_dependencies
@@ -197,12 +232,15 @@ def main():
 Examples:
   kant setup                           # Install dependencies
   kant pdf presentation.pdf            # Extract PDF to images
-  kant audio --script voiceover.md     # Generate audio
+  kant script --input presentation.pdf # Generate voiceover script from PDF
+  kant audio --script voiceover.md     # Generate audio from script
   kant images --input slides/          # Translate images
   kant localize --pdf deck.pdf --script script.md --lang Spanish
 
 Full pipeline:
-  kant localize --pdf presentation.pdf --script voiceover.md --lang French
+  kant pdf presentation.pdf            # Step 1: Extract slides
+  kant script --input presentation.pdf # Step 2: Generate script
+  kant audio --script voiceover.md     # Step 3: Generate audio
         """
     )
     parser.add_argument("--version", action="version", version=f"kant {__version__}")
@@ -218,6 +256,12 @@ Full pipeline:
     pdf_parser.add_argument("--output", "-o", help="Output directory")
     pdf_parser.add_argument("--dpi", type=int, default=150, help="Image resolution (default: 150)")
     pdf_parser.add_argument("--format", choices=["png", "jpg"], default="png", help="Output format")
+
+    # Script command
+    script_parser = subparsers.add_parser("script", help="Generate voiceover script from PDF/images")
+    script_parser.add_argument("--input", "-i", help="PDF file or images folder")
+    script_parser.add_argument("--output", "-o", help="Output markdown file")
+    script_parser.add_argument("--context", "-c", help="Presentation context/description")
 
     # Audio command
     audio_parser = subparsers.add_parser("audio", help="Generate audio from voiceover script")
@@ -252,6 +296,7 @@ Full pipeline:
     commands = {
         "setup": cmd_setup,
         "pdf": cmd_pdf,
+        "script": cmd_script,
         "audio": cmd_audio,
         "images": cmd_images,
         "localize": cmd_localize,

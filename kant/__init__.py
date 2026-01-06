@@ -3,18 +3,22 @@ Kant - Media Processing Toolkit
 
 A unified tool for processing presentations:
 - Extract PDF pages to images
+- Generate voiceover scripts from slides using AI
 - Translate images using Gemini AI
 - Generate audio voiceovers from scripts
 """
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 from .pdf import extract_pdf_pages
+from .scripts import generate_scripts, generate_slide_script
 from .images import translate_image, translate_images
 from .audio import generate_audio, parse_voiceover_script
 
 __all__ = [
     "extract_pdf_pages",
+    "generate_scripts",
+    "generate_slide_script",
     "translate_image",
     "translate_images",
     "generate_audio",
