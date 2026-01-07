@@ -22,6 +22,11 @@ dist/
 *_translated/
 localized_*/
 
+# Project folders (not part of package)
+centroid/
+pure-reason/
+kantify-main/
+
 # IDE
 .vscode/
 .idea/
