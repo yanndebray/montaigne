@@ -1,5 +1,5 @@
 """
-Kant - Media Processing Toolkit
+Montaigne - Media Processing Toolkit
 
 A unified tool for processing presentations:
 - Extract PDF pages to images

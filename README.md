@@ -1,10 +1,11 @@
-# Kant
+# Montaigne
 
 Media processing toolkit for presentation localization using Google Gemini AI.
 
 ## Features
 
 - **PDF Extraction**: Convert PDF pages to images
+- **Script Generation**: Generate voiceover scripts from slides using AI
 - **Image Translation**: Translate text in images to any language
 - **Audio Generation**: Generate voiceover audio from scripts using TTS
 
@@ -23,7 +24,7 @@ pip install -e .
    ```
 3. Verify setup:
    ```bash
-   kant setup
+   essai setup
    ```
 
 ## Usage
@@ -31,15 +32,22 @@ pip install -e .
 ### Extract PDF to Images
 
 ```bash
-kant pdf presentation.pdf
-kant pdf presentation.pdf --dpi 200 --format jpg
+essai pdf presentation.pdf
+essai pdf presentation.pdf --dpi 200 --format jpg
+```
+
+### Generate Voiceover Script from Slides
+
+```bash
+essai script --input presentation.pdf
+essai script --input slides_images/ --context "AI workshop"
 ```
 
 ### Generate Audio from Script
 
 ```bash
-kant audio --script voiceover.md
-kant audio --script voiceover.md --voice Kore
+essai audio --script voiceover.md
+essai audio --script voiceover.md --voice Kore
 ```
 
 Available voices: `Puck`, `Charon`, `Kore`, `Fenrir`, `Aoede`, `Orus`
@@ -47,14 +55,14 @@ Available voices: `Puck`, `Charon`, `Kore`, `Fenrir`, `Aoede`, `Orus`
 ### Translate Images
 
 ```bash
-kant images --input slides/
-kant images --input image.png --lang Spanish
+essai images --input slides/
+essai images --input image.png --lang Spanish
 ```
 
 ### Full Localization Pipeline
 
 ```bash
-kant localize --pdf presentation.pdf --script voiceover.md --lang French
+essai localize --pdf presentation.pdf --script voiceover.md --lang French
 ```
 
 This will:
@@ -68,14 +76,14 @@ Scripts should follow this markdown format:
 
 ```markdown
 ## SLIDE 1: Title
-**Duration: ~45 seconds**
+**[Duration: ~45 seconds]**
 
 Your narration text for slide 1 goes here.
 
 ---
 
 ## SLIDE 2: Next Topic
-**Duration: ~60 seconds**
+**[Duration: ~60 seconds]**
 
 Narration for slide 2.
 ```
@@ -89,7 +97,7 @@ See the `demo/hamlet/` folder for a complete example with:
 
 ```bash
 cd demo/hamlet
-kant localize --lang French
+essai localize --lang French
 ```
 
 ## Requirements

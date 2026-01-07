@@ -1,4 +1,4 @@
-"""Command-line interface for Kant media processing toolkit."""
+"""Command-line interface for Montaigne media processing toolkit."""
 
 import argparse
 import os
@@ -12,7 +12,7 @@ def cmd_setup(args):
     """Install dependencies and verify configuration."""
     from .config import check_dependencies, install_dependencies, load_api_key
 
-    print("=== Kant Setup ===\n")
+    print("=== Montaigne Setup ===\n")
 
     if not check_dependencies():
         install_dependencies()
@@ -39,7 +39,7 @@ def cmd_pdf(args):
     from .pdf import extract_pdf_pages
 
     if not check_dependencies():
-        print("Dependencies not installed. Run: kant setup")
+        print("Dependencies not installed. Run: essai setup")
         sys.exit(1)
 
     print("=== PDF Extraction ===")
@@ -61,7 +61,7 @@ def cmd_script(args):
     from .scripts import generate_scripts
 
     if not check_dependencies():
-        print("Dependencies not installed. Run: kant setup")
+        print("Dependencies not installed. Run: essai setup")
         sys.exit(1)
 
     print("=== Script Generation ===")
@@ -96,7 +96,7 @@ def cmd_audio(args):
     from .audio import generate_audio
 
     if not check_dependencies():
-        print("Dependencies not installed. Run: kant setup")
+        print("Dependencies not installed. Run: essai setup")
         sys.exit(1)
 
     print("=== Audio Generation ===")
@@ -124,7 +124,7 @@ def cmd_images(args):
     from .images import translate_images
 
     if not check_dependencies():
-        print("Dependencies not installed. Run: kant setup")
+        print("Dependencies not installed. Run: essai setup")
         sys.exit(1)
 
     print("=== Image Translation ===")
@@ -161,10 +161,10 @@ def cmd_localize(args):
     from .audio import generate_audio
 
     if not check_dependencies():
-        print("Dependencies not installed. Run: kant setup")
+        print("Dependencies not installed. Run: essai setup")
         sys.exit(1)
 
-    print("=== Kant Localization Pipeline ===\n")
+    print("=== Montaigne Localization Pipeline ===\n")
 
     project_dir = Path.cwd()
     output_base = Path(args.output) if args.output else project_dir / f"localized_{args.lang.lower()}"
@@ -225,25 +225,25 @@ def cmd_localize(args):
 
 def main():
     parser = argparse.ArgumentParser(
-        prog="kant",
-        description="Kant - Media Processing Toolkit for Presentation Localization",
+        prog="essai",
+        description="Montaigne - Media Processing Toolkit for Presentation Localization",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  kant setup                           # Install dependencies
-  kant pdf presentation.pdf            # Extract PDF to images
-  kant script --input presentation.pdf # Generate voiceover script from PDF
-  kant audio --script voiceover.md     # Generate audio from script
-  kant images --input slides/          # Translate images
-  kant localize --pdf deck.pdf --script script.md --lang Spanish
+  essai setup                           # Install dependencies
+  essai pdf presentation.pdf            # Extract PDF to images
+  essai script --input presentation.pdf # Generate voiceover script from PDF
+  essai audio --script voiceover.md     # Generate audio from script
+  essai images --input slides/          # Translate images
+  essai localize --pdf deck.pdf --script script.md --lang Spanish
 
 Full pipeline:
-  kant pdf presentation.pdf            # Step 1: Extract slides
-  kant script --input presentation.pdf # Step 2: Generate script
-  kant audio --script voiceover.md     # Step 3: Generate audio
+  essai pdf presentation.pdf            # Step 1: Extract slides
+  essai script --input presentation.pdf # Step 2: Generate script
+  essai audio --script voiceover.md     # Step 3: Generate audio
         """
     )
-    parser.add_argument("--version", action="version", version=f"kant {__version__}")
+    parser.add_argument("--version", action="version", version=f"montaigne {__version__}")
 
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
