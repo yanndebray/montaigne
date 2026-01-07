@@ -146,6 +146,65 @@ def cmd_images(args):
     translate_images(input_path, output_dir=output_dir, target_lang=args.lang)
 
 
+def cmd_video(args):
+    """Generate video from slides and audio."""
+    from .video import generate_video, generate_video_from_pdf, check_ffmpeg
+
+    if not check_ffmpeg():
+        print("Error: ffmpeg not found. Please install ffmpeg to generate videos.")
+        print("  Windows: choco install ffmpeg  or  winget install ffmpeg")
+        print("  macOS: brew install ffmpeg")
+        print("  Linux: sudo apt install ffmpeg")
+        sys.exit(1)
+
+    print("=== Video Generation ===")
+
+    # If PDF provided, run full pipeline
+    if args.pdf:
+        pdf_path = Path(args.pdf)
+        script_path = Path(args.script) if args.script else None
+        output_path = Path(args.output) if args.output else None
+
+        generate_video_from_pdf(
+            pdf_path,
+            script_path=script_path,
+            output_path=output_path,
+            resolution=args.resolution,
+            voice=args.voice
+        )
+        return
+
+    # Otherwise, combine existing images and audio
+    images_dir = Path(args.images) if args.images else None
+    audio_dir = Path(args.audio) if args.audio else None
+
+    # Auto-detect directories
+    if images_dir is None:
+        cwd = Path.cwd()
+        image_dirs = [d for d in cwd.iterdir() if d.is_dir() and "_images" in d.name]
+        if image_dirs:
+            images_dir = image_dirs[0]
+            print(f"Auto-detected images: {images_dir.name}")
+        else:
+            print("No images directory found. Use --images to specify one.")
+            return
+
+    if audio_dir is None:
+        cwd = Path.cwd()
+        audio_dirs = [d for d in cwd.iterdir() if d.is_dir() and "_audio" in d.name]
+        if audio_dirs:
+            audio_dir = audio_dirs[0]
+            print(f"Auto-detected audio: {audio_dir.name}")
+        else:
+            print("No audio directory found. Use --audio to specify one.")
+            return
+
+    output_path = Path(args.output) if args.output else None
+
+    from .video import generate_video
+    generate_video(images_dir, audio_dir, output_path, resolution=args.resolution)
+
+
 def cmd_localize(args):
     """
     Full localization pipeline: PDF -> Images -> Translate + Audio
@@ -234,13 +293,18 @@ Examples:
   essai pdf presentation.pdf            # Extract PDF to images
   essai script --input presentation.pdf # Generate voiceover script from PDF
   essai audio --script voiceover.md     # Generate audio from script
+  essai video --pdf presentation.pdf    # Generate video from PDF (full pipeline)
   essai images --input slides/          # Translate images
   essai localize --pdf deck.pdf --script script.md --lang Spanish
 
-Full pipeline:
+Full pipeline (manual):
   essai pdf presentation.pdf            # Step 1: Extract slides
   essai script --input presentation.pdf # Step 2: Generate script
   essai audio --script voiceover.md     # Step 3: Generate audio
+  essai video --images slides/ --audio audio/  # Step 4: Create video
+
+One-command video:
+  essai video --pdf presentation.pdf    # Does all steps automatically
         """
     )
     parser.add_argument("--version", action="version", version=f"montaigne {__version__}")
@@ -287,6 +351,18 @@ Full pipeline:
     loc_parser.add_argument("--voice", default="Orus", help="TTS voice (default: Orus)")
     loc_parser.add_argument("--dpi", type=int, default=150, help="PDF extraction DPI (default: 150)")
 
+    # Video command
+    video_parser = subparsers.add_parser("video", help="Generate video from slides and audio")
+    video_parser.add_argument("--pdf", "-p", help="PDF file (runs full pipeline: extract, script, audio, video)")
+    video_parser.add_argument("--images", "-i", help="Images directory (if not using --pdf)")
+    video_parser.add_argument("--audio", "-a", help="Audio directory (if not using --pdf)")
+    video_parser.add_argument("--script", "-s", help="Existing voiceover script (optional with --pdf)")
+    video_parser.add_argument("--output", "-o", help="Output video file")
+    video_parser.add_argument("--resolution", "-r", default="1920:1080", help="Video resolution (default: 1920:1080)")
+    video_parser.add_argument("--voice", default="Orus",
+                              choices=["Puck", "Charon", "Kore", "Fenrir", "Aoede", "Orus"],
+                              help="TTS voice for audio generation (default: Orus)")
+
     args = parser.parse_args()
 
     if args.command is None:
@@ -298,6 +374,7 @@ Full pipeline:
         "pdf": cmd_pdf,
         "script": cmd_script,
         "audio": cmd_audio,
+        "video": cmd_video,
         "images": cmd_images,
         "localize": cmd_localize,
     }

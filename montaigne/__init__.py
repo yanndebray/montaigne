@@ -6,14 +6,16 @@ A unified tool for processing presentations:
 - Generate voiceover scripts from slides using AI
 - Translate images using Gemini AI
 - Generate audio voiceovers from scripts
+- Generate videos from slides and audio
 """
 
-__version__ = "0.2.1"
+__version__ = "0.3.0"
 
 from .pdf import extract_pdf_pages
 from .scripts import generate_scripts, generate_slide_script
 from .images import translate_image, translate_images
 from .audio import generate_audio, parse_voiceover_script
+from .video import generate_video, generate_video_from_pdf
 
 __all__ = [
     "extract_pdf_pages",
@@ -23,4 +25,6 @@ __all__ = [
     "translate_images",
     "generate_audio",
     "parse_voiceover_script",
+    "generate_video",
+    "generate_video_from_pdf",
 ]
