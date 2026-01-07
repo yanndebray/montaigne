@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(essai script:*)",
+      "Bash(essai audio:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
+    ]
+  }
+}

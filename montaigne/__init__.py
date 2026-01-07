@@ -8,7 +8,7 @@ A unified tool for processing presentations:
 - Generate audio voiceovers from scripts
 """
 
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 
 from .pdf import extract_pdf_pages
 from .scripts import generate_scripts, generate_slide_script
