@@ -8,6 +8,12 @@ from pathlib import Path
 from . import __version__
 
 
+def cmd_gui(args):
+    """Launch the graphical user interface."""
+    from .gui import launch_gui
+    launch_gui()
+
+
 def cmd_setup(args):
     """Install dependencies and verify configuration."""
     from .config import check_dependencies, install_dependencies, load_api_key
@@ -289,6 +295,7 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
+  essai gui                             # Launch graphical interface
   essai setup                           # Install dependencies
   essai pdf presentation.pdf            # Extract PDF to images
   essai script --input presentation.pdf # Generate voiceover script from PDF
@@ -310,6 +317,9 @@ One-command video:
     parser.add_argument("--version", action="version", version=f"montaigne {__version__}")
 
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
+
+    # GUI command
+    subparsers.add_parser("gui", help="Launch graphical user interface")
 
     # Setup command
     subparsers.add_parser("setup", help="Install dependencies and verify configuration")
@@ -370,6 +380,7 @@ One-command video:
         return
 
     commands = {
+        "gui": cmd_gui,
         "setup": cmd_setup,
         "pdf": cmd_pdf,
         "script": cmd_script,
