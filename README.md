@@ -8,6 +8,8 @@ Media processing toolkit for presentation localization using Google Gemini AI.
 - **Script Generation**: Generate voiceover scripts from slides using AI
 - **Image Translation**: Translate text in images to any language
 - **Audio Generation**: Generate voiceover audio from scripts using TTS
+- **PowerPoint Generation**: Create PPTX from PDF or images with speaker notes
+- **Video Generation**: Combine slides and audio into MP4 videos
 
 ## Installation
 
@@ -59,6 +61,23 @@ essai images --input slides/
 essai images --input image.png --lang Spanish
 ```
 
+### Create PowerPoint from PDF or Images
+
+```bash
+essai ppt --input presentation.pdf
+essai ppt --input slides/ --script voiceover.md
+essai ppt --input presentation.pdf --keep-images
+```
+
+This will create a `.pptx` file with each PDF page or image as a slide. If a voiceover script is provided, it will be added as speaker notes.
+
+### Generate Video from Slides
+
+```bash
+essai video --pdf presentation.pdf
+essai video --images slides/ --audio audio/
+```
+
 ### Full Localization Pipeline
 
 ```bash
@@ -104,4 +123,5 @@ essai localize --lang French
 
 - Python 3.10+
 - Google Gemini API key
-- Dependencies: `google-genai`, `python-dotenv`, `pymupdf`
+- ffmpeg (for video generation)
+- Dependencies: `google-genai`, `python-dotenv`, `pymupdf`, `python-pptx`, `Pillow`
