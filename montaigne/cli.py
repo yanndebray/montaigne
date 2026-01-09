@@ -205,6 +205,57 @@ def cmd_video(args):
     generate_video(images_dir, audio_dir, output_path, resolution=args.resolution)
 
 
+def cmd_ppt(args):
+    """Create PowerPoint from PDF or images folder."""
+    from .config import check_dependencies
+    from .ppt import create_pptx
+
+    if not check_dependencies():
+        print("Dependencies not installed. Run: essai setup")
+        sys.exit(1)
+
+    print("=== PowerPoint Generation ===")
+
+    input_path = Path(args.input) if args.input else None
+
+    # Auto-detect input
+    if input_path is None:
+        cwd = Path.cwd()
+        # First try to find a PDF
+        pdfs = list(cwd.glob("*.pdf"))
+        if pdfs:
+            input_path = pdfs[0]
+            print(f"Auto-detected PDF: {input_path.name}")
+        else:
+            # Try to find an images folder
+            image_dirs = [d for d in cwd.iterdir() if d.is_dir() and "images" in d.name.lower()]
+            if image_dirs:
+                input_path = image_dirs[0]
+                print(f"Auto-detected folder: {input_path.name}")
+            else:
+                print("No PDF or images folder found. Use --input to specify one.")
+                return
+
+    output_path = Path(args.output) if args.output else None
+    script_path = Path(args.script) if args.script else None
+
+    # Auto-detect script if not provided
+    if script_path is None:
+        cwd = Path.cwd()
+        scripts = list(cwd.glob("*voiceover*.md"))
+        if scripts:
+            script_path = scripts[0]
+            print(f"Auto-detected script: {script_path.name}")
+
+    create_pptx(
+        input_path,
+        output_path=output_path,
+        script_path=script_path,
+        dpi=args.dpi,
+        keep_images=args.keep_images
+    )
+
+
 def cmd_localize(args):
     """
     Full localization pipeline: PDF -> Images -> Translate + Audio
@@ -295,6 +346,8 @@ Examples:
   essai audio --script voiceover.md     # Generate audio from script
   essai video --pdf presentation.pdf    # Generate video from PDF (full pipeline)
   essai images --input slides/          # Translate images
+  essai ppt --input presentation.pdf    # Convert PDF to PowerPoint
+  essai ppt --input slides/ --script voiceover.md  # Images to PPT with notes
   essai localize --pdf deck.pdf --script script.md --lang Spanish
 
 Full pipeline (manual):
@@ -351,6 +404,15 @@ One-command video:
     loc_parser.add_argument("--voice", default="Orus", help="TTS voice (default: Orus)")
     loc_parser.add_argument("--dpi", type=int, default=150, help="PDF extraction DPI (default: 150)")
 
+    # PPT command
+    ppt_parser = subparsers.add_parser("ppt", help="Create PowerPoint from PDF or images")
+    ppt_parser.add_argument("--input", "-i", help="PDF file or images folder")
+    ppt_parser.add_argument("--output", "-o", help="Output .pptx file")
+    ppt_parser.add_argument("--script", "-s", help="Voiceover script for slide notes")
+    ppt_parser.add_argument("--dpi", type=int, default=150, help="PDF extraction DPI (default: 150)")
+    ppt_parser.add_argument("--keep-images", action="store_true",
+                            help="Keep extracted images when converting PDF")
+
     # Video command
     video_parser = subparsers.add_parser("video", help="Generate video from slides and audio")
     video_parser.add_argument("--pdf", "-p", help="PDF file (runs full pipeline: extract, script, audio, video)")
@@ -377,6 +439,7 @@ One-command video:
         "video": cmd_video,
         "images": cmd_images,
         "localize": cmd_localize,
+        "ppt": cmd_ppt,
     }
 
     commands[args.command](args)

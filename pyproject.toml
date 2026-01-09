@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "montaigne"
-version = "0.3.0"
+version = "0.4.0"
 description = "Media processing toolkit for presentation localization"
 readme = "README.md"
 license = {text = "MIT"}
@@ -29,6 +29,8 @@ dependencies = [
     "google-genai>=1.0.0",
     "python-dotenv>=1.0.0",
     "pymupdf>=1.24.0",
+    "python-pptx>=0.6.21",
+    "Pillow>=10.0.0",
 ]
 
 [project.optional-dependencies]
