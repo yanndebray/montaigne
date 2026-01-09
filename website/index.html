@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>montaigne — Media Processing for Presentation Localization</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✒️</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&family=JetBrains+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --ink: #1a1816;
+            --paper: #faf8f5;
+            --paper-dark: #f0ede8;
+            --accent: #c9a962;
+            --accent-deep: #8b7355;
+            --muted: #6b635a;
+            --code-bg: #2d2a26;
+            --code-text: #e8e4df;
+            --serif: 'Crimson Pro', Georgia, serif;
+            --sans: 'DM Sans', -apple-system, sans-serif;
+            --mono: 'JetBrains Mono', monospace;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--sans);
+            background: var(--paper);
+            color: var(--ink);
+            line-height: 1.7;
+            font-size: 17px;
+            overflow-x: hidden;
+        }
+
+        /* Paper texture overlay */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            opacity: 0.03;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+            z-index: 1000;
+        }
+
+        /* Decorative border */
+        .page-border {
+            position: fixed;
+            top: 12px;
+            left: 12px;
+            right: 12px;
+            bottom: 12px;
+            border: 1px solid rgba(26, 24, 22, 0.08);
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 50;
+            padding: 1.5rem 3rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(to bottom, var(--paper) 60%, transparent);
+        }
+
+        .logo {
+            font-family: var(--serif);
+            font-size: 1.4rem;
+            font-weight: 500;
+            letter-spacing: -0.02em;
+            color: var(--ink);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .logo-mark {
+            width: 28px;
+            height: 28px;
+            border: 2px solid var(--ink);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            font-style: italic;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2.5rem;
+        }
+
+        .nav-links a {
+            color: var(--muted);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover {
+            color: var(--ink);
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 6rem 3rem 4rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .hero-content {
+            max-width: 800px;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 1rem;
+            background: var(--paper-dark);
+            border-radius: 100px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--muted);
+            margin-bottom: 2rem;
+            animation: fadeInUp 0.8s ease forwards;
+            opacity: 0;
+        }
+
+        .hero-badge span {
+            color: var(--accent-deep);
+        }
+
+        h1 {
+            font-family: var(--serif);
+            font-size: clamp(3rem, 8vw, 5.5rem);
+            font-weight: 300;
+            line-height: 1.05;
+            letter-spacing: -0.03em;
+            margin-bottom: 1.5rem;
+            animation: fadeInUp 0.8s ease 0.1s forwards;
+            opacity: 0;
+        }
+
+        h1 em {
+            font-style: italic;
+            color: var(--accent-deep);
+        }
+
+        .hero-subtitle {
+            font-family: var(--serif);
+            font-size: 1.4rem;
+            font-weight: 400;
+            color: var(--muted);
+            max-width: 540px;
+            margin-bottom: 3rem;
+            animation: fadeInUp 0.8s ease 0.2s forwards;
+            opacity: 0;
+        }
+
+        .hero-actions {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            animation: fadeInUp 0.8s ease 0.3s forwards;
+            opacity: 0;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1rem 2rem;
+            border-radius: 4px;
+            font-weight: 500;
+            font-size: 0.95rem;
+            text-decoration: none;
+            transition: all 0.25s ease;
+        }
+
+        .btn-primary {
+            background: var(--ink);
+            color: var(--paper);
+        }
+
+        .btn-primary:hover {
+            background: #2d2926;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(26, 24, 22, 0.15);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--ink);
+            border: 1px solid rgba(26, 24, 22, 0.2);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--ink);
+            background: rgba(26, 24, 22, 0.03);
+        }
+
+        /* Decorative elements */
+        .hero-decoration {
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 400px;
+            height: 500px;
+            opacity: 0.04;
+            pointer-events: none;
+        }
+
+        .hero-decoration svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Install Banner */
+        .install-banner {
+            background: var(--code-bg);
+            padding: 1rem 3rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        .install-cmd {
+            font-family: var(--mono);
+            font-size: 0.95rem;
+            color: var(--code-text);
+            background: rgba(255, 255, 255, 0.05);
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .install-cmd .prefix {
+            color: var(--accent);
+        }
+
+        .copy-btn {
+            background: transparent;
+            border: none;
+            color: var(--muted);
+            cursor: pointer;
+            padding: 0.3rem;
+            transition: color 0.2s;
+        }
+
+        .copy-btn:hover {
+            color: var(--code-text);
+        }
+
+        /* Main content sections */
+        section {
+            padding: 6rem 3rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section-header {
+            text-align: center;
+            max-width: 600px;
+            margin: 0 auto 4rem;
+        }
+
+        .section-eyebrow {
+            font-family: var(--mono);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: var(--accent-deep);
+            margin-bottom: 1rem;
+        }
+
+        h2 {
+            font-family: var(--serif);
+            font-size: 2.5rem;
+            font-weight: 400;
+            letter-spacing: -0.02em;
+            margin-bottom: 1rem;
+        }
+
+        .section-desc {
+            color: var(--muted);
+            font-size: 1.1rem;
+        }
+
+        /* Features Grid */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .feature-card {
+            background: var(--paper-dark);
+            padding: 2.5rem;
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 50px rgba(26, 24, 22, 0.08);
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent), var(--accent-deep));
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .feature-card:hover::before {
+            opacity: 1;
+        }
+
+        .feature-icon {
+            width: 48px;
+            height: 48px;
+            margin-bottom: 1.5rem;
+            color: var(--accent-deep);
+        }
+
+        .feature-card h3 {
+            font-family: var(--serif);
+            font-size: 1.3rem;
+            font-weight: 500;
+            margin-bottom: 0.75rem;
+        }
+
+        .feature-card p {
+            color: var(--muted);
+            font-size: 0.95rem;
+            line-height: 1.7;
+        }
+
+        /* Code Examples */
+        .code-section {
+            background: var(--code-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            margin: 2rem 0;
+        }
+
+        .code-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .code-tabs {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .code-tab {
+            padding: 0.5rem 1rem;
+            font-size: 0.85rem;
+            font-family: var(--mono);
+            background: transparent;
+            border: none;
+            color: var(--muted);
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .code-tab.active {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--code-text);
+        }
+
+        .code-dots {
+            display: flex;
+            gap: 6px;
+        }
+
+        .code-dots span {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        pre {
+            padding: 1.5rem;
+            overflow-x: auto;
+            font-family: var(--mono);
+            font-size: 0.9rem;
+            line-height: 1.8;
+            color: var(--code-text);
+        }
+
+        code {
+            font-family: var(--mono);
+        }
+
+        .code-comment { color: #6b7280; }
+        .code-keyword { color: #c9a962; }
+        .code-string { color: #a5d6a7; }
+        .code-function { color: #90caf9; }
+        .code-class { color: #ce93d8; }
+
+        /* Divider */
+        .divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            padding: 2rem 0;
+            color: var(--muted);
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            width: 60px;
+            height: 1px;
+            background: currentColor;
+            opacity: 0.3;
+        }
+
+        .divider svg {
+            width: 20px;
+            height: 20px;
+            opacity: 0.5;
+        }
+
+        /* API Reference */
+        .api-grid {
+            display: grid;
+            gap: 1.5rem;
+        }
+
+        .api-item {
+            display: grid;
+            grid-template-columns: 200px 1fr;
+            gap: 2rem;
+            padding: 2rem;
+            background: var(--paper-dark);
+            border-radius: 8px;
+            align-items: start;
+        }
+
+        .api-name {
+            font-family: var(--mono);
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--accent-deep);
+        }
+
+        .api-desc {
+            color: var(--muted);
+            font-size: 0.95rem;
+        }
+
+        /* Philosophy Quote */
+        .philosophy {
+            background: linear-gradient(135deg, var(--paper-dark) 0%, var(--paper) 100%);
+            padding: 5rem 3rem;
+            text-align: center;
+            position: relative;
+        }
+
+        .quote-mark {
+            font-family: var(--serif);
+            font-size: 8rem;
+            line-height: 1;
+            color: var(--accent);
+            opacity: 0.15;
+            position: absolute;
+            top: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        blockquote {
+            font-family: var(--serif);
+            font-size: 1.6rem;
+            font-style: italic;
+            max-width: 700px;
+            margin: 0 auto 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .quote-author {
+            font-family: var(--sans);
+            font-size: 0.9rem;
+            color: var(--muted);
+            font-style: normal;
+        }
+
+        /* Footer */
+        footer {
+            padding: 4rem 3rem 3rem;
+            border-top: 1px solid rgba(26, 24, 22, 0.08);
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 2rem;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .footer-links a {
+            color: var(--muted);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.2s;
+        }
+
+        .footer-links a:hover {
+            color: var(--ink);
+        }
+
+        .footer-copy {
+            color: var(--muted);
+            font-size: 0.85rem;
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Scroll animations */
+        .animate-on-scroll {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+
+        .animate-on-scroll.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            nav {
+                padding: 1rem 1.5rem;
+            }
+
+            .nav-links {
+                display: none;
+            }
+
+            .hero {
+                padding: 8rem 1.5rem 4rem;
+            }
+
+            section {
+                padding: 4rem 1.5rem;
+            }
+
+            .api-item {
+                grid-template-columns: 1fr;
+                gap: 0.75rem;
+            }
+
+            .install-banner {
+                padding: 1rem 1.5rem;
+            }
+
+            .install-cmd {
+                font-size: 0.8rem;
+                padding: 0.5rem 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page-border"></div>
+
+    <nav>
+        <a href="#" class="logo">
+            <span class="logo-mark">m</span>
+            montaigne
+        </a>
+        <div class="nav-links">
+            <a href="#features">Features</a>
+            <a href="#usage">Usage</a>
+            <a href="#cli">CLI</a>
+            <a href="https://pypi.org/project/montaigne/" target="_blank">PyPI</a>
+        </div>
+    </nav>
+
+    <main>
+        <section class="hero">
+            <div class="hero-content">
+                <div class="hero-badge">
+                    <span>v0.3.0</span> · MIT Licensed
+                </div>
+                <h1>Localize. Narrate.<br><em>Present.</em></h1>
+                <p class="hero-subtitle">
+                    A powerful Python toolkit for presentation localization. Extract slides, translate visuals, generate voiceovers, and create videos—all powered by Google Gemini AI.
+                </p>
+                <div class="hero-actions">
+                    <a href="#usage" class="btn btn-primary">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="5 3 19 12 5 21 5 3"/>
+                        </svg>
+                        Get Started
+                    </a>
+                    <a href="https://pypi.org/project/montaigne/" class="btn btn-secondary" target="_blank">
+                        View on PyPI
+                    </a>
+                </div>
+            </div>
+            <div class="hero-decoration">
+                <svg viewBox="0 0 400 500" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M50 100 Q200 50 350 150 Q400 250 300 350 Q200 450 100 400 Q0 350 50 200 Z" stroke="currentColor" stroke-width="0.5" fill="none"/>
+                    <path d="M100 150 Q200 100 300 180 Q350 260 280 340 Q200 400 140 360 Q60 300 100 220 Z" stroke="currentColor" stroke-width="0.5" fill="none"/>
+                    <circle cx="200" cy="250" r="80" stroke="currentColor" stroke-width="0.5" fill="none"/>
+                </svg>
+            </div>
+        </section>
+
+        <div class="install-banner">
+            <div class="install-cmd">
+                <span class="prefix">$</span> pip install montaigne
+                <button class="copy-btn" onclick="copyToClipboard('pip install montaigne')">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <section id="features">
+            <div class="section-header animate-on-scroll">
+                <p class="section-eyebrow">Features</p>
+                <h2>Everything You Need</h2>
+                <p class="section-desc">A complete toolkit for localizing presentations and generating multimedia content with AI.</p>
+            </div>
+
+            <div class="features-grid">
+                <div class="feature-card animate-on-scroll">
+                    <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14,2 14,8 20,8"/>
+                        <line x1="16" y1="13" x2="8" y2="13"/>
+                        <line x1="16" y1="17" x2="8" y2="17"/>
+                    </svg>
+                    <h3>PDF Extraction</h3>
+                    <p>Convert PDF presentations to high-quality images. Configurable DPI settings (150-300+) with PNG or JPG output formats.</p>
+                </div>
+
+                <div class="feature-card animate-on-scroll">
+                    <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M12 20h9"/>
+                        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                    </svg>
+                    <h3>Script Generation</h3>
+                    <p>Generate professional voiceover scripts from slides using AI. Context-aware narration with markdown formatting and timing cues.</p>
+                </div>
+
+                <div class="feature-card animate-on-scroll">
+                    <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="2" y1="12" x2="22" y2="12"/>
+                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                    </svg>
+                    <h3>Image Translation</h3>
+                    <p>Translate text in images to any target language. Powered by Google Gemini AI for accurate, context-aware translations.</p>
+                </div>
+
+                <div class="feature-card animate-on-scroll">
+                    <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                        <line x1="12" y1="19" x2="12" y2="23"/>
+                        <line x1="8" y1="23" x2="16" y2="23"/>
+                    </svg>
+                    <h3>Voice Synthesis</h3>
+                    <p>Generate natural voiceover audio from scripts. Six distinct voices available: Puck, Charon, Kore, Fenrir, Aoede, and Orus.</p>
+                </div>
+
+                <div class="feature-card animate-on-scroll">
+                    <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/>
+                        <line x1="7" y1="2" x2="7" y2="22"/>
+                        <line x1="17" y1="2" x2="17" y2="22"/>
+                        <line x1="2" y1="12" x2="22" y2="12"/>
+                        <line x1="2" y1="7" x2="7" y2="7"/>
+                        <line x1="2" y1="17" x2="7" y2="17"/>
+                        <line x1="17" y1="17" x2="22" y2="17"/>
+                        <line x1="17" y1="7" x2="22" y2="7"/>
+                    </svg>
+                    <h3>Video Generation</h3>
+                    <p>Combine translated slides and voiceover audio into polished videos. Configurable resolution up to 1920x1080.</p>
+                </div>
+
+                <div class="feature-card animate-on-scroll">
+                    <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                    </svg>
+                    <h3>Full Pipeline</h3>
+                    <p>One-command localization workflow. Extract, translate, and generate audio in a single step with <code>essai localize</code>.</p>
+                </div>
+            </div>
+        </section>
+
+        <div class="divider">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <polygon points="5 3 19 12 5 21 5 3"/>
+            </svg>
+        </div>
+
+        <section id="usage">
+            <div class="section-header animate-on-scroll">
+                <p class="section-eyebrow">Quick Start</p>
+                <h2>Simple by Design</h2>
+                <p class="section-desc">Get started in seconds. Set up your API key and start localizing presentations.</p>
+            </div>
+
+            <div class="code-section animate-on-scroll">
+                <div class="code-header">
+                    <div class="code-tabs">
+                        <button class="code-tab active">Setup</button>
+                    </div>
+                    <div class="code-dots">
+                        <span></span><span></span><span></span>
+                    </div>
+                </div>
+<pre><span class="code-comment"># Install the package</span>
+<span class="code-keyword">$</span> pip install montaigne
+
+<span class="code-comment"># Create .env file with your Gemini API key</span>
+<span class="code-keyword">$</span> echo <span class="code-string">"GEMINI_API_KEY=your-api-key"</span> > .env
+
+<span class="code-comment"># Verify everything is set up correctly</span>
+<span class="code-keyword">$</span> essai setup
+<span class="code-string">API key configured successfully</span></pre>
+            </div>
+
+            <div class="code-section animate-on-scroll">
+                <div class="code-header">
+                    <div class="code-tabs">
+                        <button class="code-tab active">voiceover.md</button>
+                    </div>
+                    <div class="code-dots">
+                        <span></span><span></span><span></span>
+                    </div>
+                </div>
+<pre><span class="code-comment">## SLIDE 1: Introduction</span>
+<span class="code-keyword">**[Duration: ~45 seconds]**</span>
+
+Welcome to this presentation on artificial intelligence
+and its applications in modern business.
+
+<span class="code-string">---</span>
+
+<span class="code-comment">## SLIDE 2: Key Benefits</span>
+<span class="code-keyword">**[Duration: ~60 seconds]**</span>
+
+Let's explore the three main benefits of AI adoption:
+automation, insights, and scalability.
+
+<span class="code-string">---</span>
+
+<span class="code-comment">## SLIDE 3: Case Study</span>
+<span class="code-keyword">**[Duration: ~90 seconds]**</span>
+
+Our research shows a 40% increase in productivity
+when AI tools are properly integrated.</pre>
+            </div>
+        </section>
+
+        <section id="cli">
+            <div class="section-header animate-on-scroll">
+                <p class="section-eyebrow">CLI Reference</p>
+                <h2>The essai Command</h2>
+                <p class="section-desc">A powerful command-line interface for all your localization needs.</p>
+            </div>
+
+            <div class="api-grid">
+                <div class="api-item animate-on-scroll">
+                    <span class="api-name">essai setup</span>
+                    <span class="api-desc">Verify your environment and API key configuration. Run this first to ensure everything is properly set up.</span>
+                </div>
+                <div class="api-item animate-on-scroll">
+                    <span class="api-name">essai pdf</span>
+                    <span class="api-desc">Extract PDF pages to images. Options: <code>--dpi 200</code> for resolution, <code>--format jpg</code> for output format.</span>
+                </div>
+                <div class="api-item animate-on-scroll">
+                    <span class="api-name">essai script</span>
+                    <span class="api-desc">Generate voiceover scripts from slides using AI. Options: <code>--input</code> for PDF or image folder, <code>--context</code> for additional context.</span>
+                </div>
+                <div class="api-item animate-on-scroll">
+                    <span class="api-name">essai audio</span>
+                    <span class="api-desc">Generate voiceover audio from scripts. Options: <code>--script</code> for input file, <code>--voice</code> for voice selection (Puck, Charon, Kore, Fenrir, Aoede, Orus).</span>
+                </div>
+                <div class="api-item animate-on-scroll">
+                    <span class="api-name">essai images</span>
+                    <span class="api-desc">Translate text in images to target language. Options: <code>--input</code> for image or folder, <code>--lang</code> for target language (default: French).</span>
+                </div>
+                <div class="api-item animate-on-scroll">
+                    <span class="api-name">essai localize</span>
+                    <span class="api-desc">Full localization pipeline: extract PDF, translate images, generate audio. Options: <code>--pdf</code>, <code>--script</code>, <code>--lang</code>.</span>
+                </div>
+                <div class="api-item animate-on-scroll">
+                    <span class="api-name">essai video</span>
+                    <span class="api-desc">Generate video from slides and audio. Combines translated images with voiceover into a polished presentation video.</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="philosophy">
+            <span class="quote-mark">"</span>
+            <blockquote class="animate-on-scroll">
+                The world is but a school of inquiry. The matter is not who shall hit the ring, but who shall make the best courses at it.
+                <footer class="quote-author">— Michel de Montaigne, Essays</footer>
+            </blockquote>
+        </section>
+
+        <section>
+            <div class="section-header animate-on-scroll">
+                <p class="section-eyebrow">Examples</p>
+                <h2>Common Workflows</h2>
+                <p class="section-desc">See montaigne in action with these real-world examples.</p>
+            </div>
+
+            <div class="code-section animate-on-scroll">
+                <div class="code-header">
+                    <div class="code-tabs">
+                        <button class="code-tab active">Terminal</button>
+                    </div>
+                    <div class="code-dots">
+                        <span></span><span></span><span></span>
+                    </div>
+                </div>
+<pre><span class="code-comment"># Extract slides from a PDF</span>
+<span class="code-keyword">$</span> essai pdf presentation.pdf --dpi 200
+<span class="code-string">Extracted 15 pages to ./presentation_pages/</span>
+
+<span class="code-comment"># Generate a voiceover script from slides</span>
+<span class="code-keyword">$</span> essai script --input presentation.pdf --context <span class="code-string">"AI workshop"</span>
+<span class="code-string">Generated script saved to ./voiceover.md</span>
+
+<span class="code-comment"># Generate audio with a specific voice</span>
+<span class="code-keyword">$</span> essai audio --script voiceover.md --voice Kore
+<span class="code-string">Generated 15 audio files in ./audio/</span>
+
+<span class="code-comment"># Full localization in one command</span>
+<span class="code-keyword">$</span> essai localize --pdf presentation.pdf --lang French
+<span class="code-string">Extracting PDF pages...</span>
+<span class="code-string">Translating images to French...</span>
+<span class="code-string">Generating audio...</span>
+<span class="code-string">Localization complete!</span></pre>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-links">
+                <a href="https://pypi.org/project/montaigne/" target="_blank">PyPI</a>
+                <a href="https://aistudio.google.com/" target="_blank">Google AI Studio</a>
+            </div>
+            <p class="footer-copy">
+                Powered by Google Gemini AI · Built for global presentations.
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        // Copy to clipboard
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = document.querySelector('.copy-btn');
+                btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>`;
+                setTimeout(() => {
+                    btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
+                }, 2000);
+            });
+        }
+
+        // Scroll animations
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        });
+
+        document.querySelectorAll('.animate-on-scroll').forEach(el => {
+            observer.observe(el);
+        });
+
+        // Smooth scroll for nav links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
