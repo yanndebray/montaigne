@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "montaigne"
-version = "0.4.0"
+version = "0.5.0"
 description = "Media processing toolkit for presentation localization"
 readme = "README.md"
 license = {text = "MIT"}
@@ -44,9 +44,9 @@ dev = [
 essai = "montaigne.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/ydebray/montaigne"
-Documentation = "https://github.com/ydebray/montaigne#readme"
-Repository = "https://github.com/ydebray/montaigne"
+Homepage = "https://github.com/yanndebray/montaigne"
+Documentation = "https://github.com/yanndebray/montaigne#readme"
+Repository = "https://github.com/yanndebray/montaigne"
 
 [tool.setuptools.packages.find]
 include = ["montaigne*"]
