@@ -649,7 +649,7 @@
         <section class="hero">
             <div class="hero-content">
                 <div class="hero-badge">
-                    <span>v0.3.0</span> · MIT Licensed
+                    <span>v0.4.0</span> · MIT Licensed
                 </div>
                 <h1>Localize. Narrate.<br><em>Present.</em></h1>
                 <p class="hero-subtitle">
@@ -750,6 +750,20 @@
                     </svg>
                     <h3>Video Generation</h3>
                     <p>Combine translated slides and voiceover audio into polished videos. Configurable resolution up to 1920x1080.</p>
+                </div>
+
+                <div class="feature-card animate-on-scroll">
+                    <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <rect x="3" y="3" width="18" height="18" rx="2"/>
+                        <path d="M9 3v18"/>
+                        <path d="M3 9h6"/>
+                        <path d="M3 15h6"/>
+                        <path d="M12 8h5"/>
+                        <path d="M12 12h5"/>
+                        <path d="M12 16h3"/>
+                    </svg>
+                    <h3>PowerPoint Export</h3>
+                    <p>Create PPTX presentations from PDF or images. Optionally add voiceover scripts as speaker notes for each slide.</p>
                 </div>
 
                 <div class="feature-card animate-on-scroll">
@@ -864,6 +878,10 @@ when AI tools are properly integrated.</pre>
                     <span class="api-name">essai video</span>
                     <span class="api-desc">Generate video from slides and audio. Combines translated images with voiceover into a polished presentation video.</span>
                 </div>
+                <div class="api-item animate-on-scroll">
+                    <span class="api-name">essai ppt</span>
+                    <span class="api-desc">Create PowerPoint from PDF or images. Options: <code>--input</code> for PDF or folder, <code>--script</code> to add speaker notes, <code>--keep-images</code> to retain extracted images.</span>
+                </div>
             </div>
         </section>
 
@@ -902,6 +920,11 @@ when AI tools are properly integrated.</pre>
 <span class="code-comment"># Generate audio with a specific voice</span>
 <span class="code-keyword">$</span> essai audio --script voiceover.md --voice Kore
 <span class="code-string">Generated 15 audio files in ./audio/</span>
+
+<span class="code-comment"># Create PowerPoint with speaker notes</span>
+<span class="code-keyword">$</span> essai ppt --input presentation.pdf --script voiceover.md
+<span class="code-string">Extracting pages from PDF...</span>
+<span class="code-string">Created: presentation.pptx</span>
 
 <span class="code-comment"># Full localization in one command</span>
 <span class="code-keyword">$</span> essai localize --pdf presentation.pdf --lang French
