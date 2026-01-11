@@ -43,7 +43,13 @@ essai pdf presentation.pdf --dpi 200 --format jpg
 ```bash
 essai script --input presentation.pdf
 essai script --input slides_images/ --context "AI workshop"
+essai script --input presentation.pdf --output custom_script.md
 ```
+
+Options:
+- `--input, -i`: PDF file or folder of slide images
+- `--output, -o`: Output markdown file path
+- `--context, -c`: Additional context to guide script generation. Use this to specify the topic, target audience, desired tone, or script length (e.g., "Brief 2-sentence scripts" or "Detailed technical explanations for developers")
 
 ### Generate Audio from Script
 
