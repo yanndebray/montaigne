@@ -9,21 +9,14 @@ from typing import List, Optional
 def check_ffmpeg() -> bool:
     """Check if ffmpeg is available."""
     try:
-        subprocess.run(
-            ["ffmpeg", "-version"],
-            capture_output=True,
-            check=True
-        )
+        subprocess.run(["ffmpeg", "-version"], capture_output=True, check=True)
         return True
     except (subprocess.CalledProcessError, FileNotFoundError):
         return False
 
 
 def create_slide_clip(
-    image_path: Path,
-    audio_path: Path,
-    output_path: Path,
-    resolution: str = "1920:1080"
+    image_path: Path, audio_path: Path, output_path: Path, resolution: str = "1920:1080"
 ) -> Path:
     """
     Create a video clip from a single image and audio file.
@@ -40,18 +33,28 @@ def create_slide_clip(
     width, height = resolution.split(":")
 
     cmd = [
-        "ffmpeg", "-y",
-        "-loop", "1",
-        "-i", str(image_path),
-        "-i", str(audio_path),
-        "-c:v", "libx264",
-        "-tune", "stillimage",
-        "-c:a", "aac",
-        "-b:a", "192k",
-        "-pix_fmt", "yuv420p",
+        "ffmpeg",
+        "-y",
+        "-loop",
+        "1",
+        "-i",
+        str(image_path),
+        "-i",
+        str(audio_path),
+        "-c:v",
+        "libx264",
+        "-tune",
+        "stillimage",
+        "-c:a",
+        "aac",
+        "-b:a",
+        "192k",
+        "-pix_fmt",
+        "yuv420p",
         "-shortest",
-        "-vf", f"scale={width}:{height}:force_original_aspect_ratio=decrease,pad={width}:{height}:(ow-iw)/2:(oh-ih)/2",
-        str(output_path)
+        "-vf",
+        f"scale={width}:{height}:force_original_aspect_ratio=decrease,pad={width}:{height}:(ow-iw)/2:(oh-ih)/2",
+        str(output_path),
     ]
 
     subprocess.run(cmd, capture_output=True, check=True)
@@ -62,7 +65,7 @@ def generate_video(
     images_dir: Path,
     audio_dir: Path,
     output_path: Optional[Path] = None,
-    resolution: str = "1920:1080"
+    resolution: str = "1920:1080",
 ) -> Path:
     """
     Generate a video from slide images and audio files.
@@ -125,12 +128,17 @@ def generate_video(
         # Concatenate all clips
         print(f"  Concatenating {len(clips)} clips...")
         concat_cmd = [
-            "ffmpeg", "-y",
-            "-f", "concat",
-            "-safe", "0",
-            "-i", str(concat_file),
-            "-c", "copy",
-            str(output_path)
+            "ffmpeg",
+            "-y",
+            "-f",
+            "concat",
+            "-safe",
+            "0",
+            "-i",
+            str(concat_file),
+            "-c",
+            "copy",
+            str(output_path),
         ]
         subprocess.run(concat_cmd, capture_output=True, check=True)
 
@@ -139,10 +147,14 @@ def generate_video(
     # Get video info
     try:
         probe_cmd = [
-            "ffprobe", "-v", "quiet",
-            "-show_entries", "format=duration,size",
-            "-of", "csv=p=0",
-            str(output_path)
+            "ffprobe",
+            "-v",
+            "quiet",
+            "-show_entries",
+            "format=duration,size",
+            "-of",
+            "csv=p=0",
+            str(output_path),
         ]
         result = subprocess.run(probe_cmd, capture_output=True, text=True)
         if result.returncode == 0:
@@ -164,7 +176,7 @@ def generate_video_from_pdf(
     script_path: Optional[Path] = None,
     output_path: Optional[Path] = None,
     resolution: str = "1920:1080",
-    voice: str = "Orus"
+    voice: str = "Orus",
 ) -> Path:
     """
     Generate a complete video from a PDF presentation.

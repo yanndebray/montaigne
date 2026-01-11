@@ -21,6 +21,7 @@ def cmd_setup(args):
 
     # Verify API key
     from dotenv import load_dotenv
+
     load_dotenv()
 
     api_key = os.environ.get("GEMINI_API_KEY")
@@ -47,12 +48,7 @@ def cmd_pdf(args):
     pdf_path = Path(args.input)
     output_dir = Path(args.output) if args.output else None
 
-    extract_pdf_pages(
-        pdf_path,
-        output_dir=output_dir,
-        dpi=args.dpi,
-        image_format=args.format
-    )
+    extract_pdf_pages(pdf_path, output_dir=output_dir, dpi=args.dpi, image_format=args.format)
 
 
 def cmd_script(args):
@@ -170,7 +166,7 @@ def cmd_video(args):
             script_path=script_path,
             output_path=output_path,
             resolution=args.resolution,
-            voice=args.voice
+            voice=args.voice,
         )
         return
 
@@ -202,6 +198,7 @@ def cmd_video(args):
     output_path = Path(args.output) if args.output else None
 
     from .video import generate_video
+
     generate_video(images_dir, audio_dir, output_path, resolution=args.resolution)
 
 
@@ -252,7 +249,7 @@ def cmd_ppt(args):
         output_path=output_path,
         script_path=script_path,
         dpi=args.dpi,
-        keep_images=args.keep_images
+        keep_images=args.keep_images,
     )
 
 
@@ -277,7 +274,9 @@ def cmd_localize(args):
     print("=== Montaigne Localization Pipeline ===\n")
 
     project_dir = Path.cwd()
-    output_base = Path(args.output) if args.output else project_dir / f"localized_{args.lang.lower()}"
+    output_base = (
+        Path(args.output) if args.output else project_dir / f"localized_{args.lang.lower()}"
+    )
     output_base.mkdir(parents=True, exist_ok=True)
 
     images_to_translate = []
@@ -358,7 +357,7 @@ Full pipeline (manual):
 
 One-command video:
   essai video --pdf presentation.pdf    # Does all steps automatically
-        """
+        """,
     )
     parser.add_argument("--version", action="version", version=f"montaigne {__version__}")
 
@@ -375,7 +374,9 @@ One-command video:
     pdf_parser.add_argument("--format", choices=["png", "jpg"], default="png", help="Output format")
 
     # Script command
-    script_parser = subparsers.add_parser("script", help="Generate voiceover script from PDF/images")
+    script_parser = subparsers.add_parser(
+        "script", help="Generate voiceover script from PDF/images"
+    )
     script_parser.add_argument("--input", "-i", help="PDF file or images folder")
     script_parser.add_argument("--output", "-o", help="Output markdown file")
     script_parser.add_argument("--context", "-c", help="Presentation context/description")
@@ -384,15 +385,20 @@ One-command video:
     audio_parser = subparsers.add_parser("audio", help="Generate audio from voiceover script")
     audio_parser.add_argument("--script", "-s", help="Path to voiceover script")
     audio_parser.add_argument("--output", "-o", help="Output directory")
-    audio_parser.add_argument("--voice", default="Orus",
-                              choices=["Puck", "Charon", "Kore", "Fenrir", "Aoede", "Orus"],
-                              help="TTS voice (default: Orus)")
+    audio_parser.add_argument(
+        "--voice",
+        default="Orus",
+        choices=["Puck", "Charon", "Kore", "Fenrir", "Aoede", "Orus"],
+        help="TTS voice (default: Orus)",
+    )
 
     # Images command
     images_parser = subparsers.add_parser("images", help="Translate images")
     images_parser.add_argument("--input", "-i", help="Input image file or folder")
     images_parser.add_argument("--output", "-o", help="Output directory")
-    images_parser.add_argument("--lang", "-l", default="French", help="Target language (default: French)")
+    images_parser.add_argument(
+        "--lang", "-l", default="French", help="Target language (default: French)"
+    )
 
     # Localize command (full pipeline)
     loc_parser = subparsers.add_parser("localize", help="Full localization pipeline")
@@ -400,30 +406,46 @@ One-command video:
     loc_parser.add_argument("--images", "-i", help="Input images folder (alternative to PDF)")
     loc_parser.add_argument("--script", "-s", help="Voiceover script for audio generation")
     loc_parser.add_argument("--output", "-o", help="Output directory")
-    loc_parser.add_argument("--lang", "-l", default="French", help="Target language (default: French)")
+    loc_parser.add_argument(
+        "--lang", "-l", default="French", help="Target language (default: French)"
+    )
     loc_parser.add_argument("--voice", default="Orus", help="TTS voice (default: Orus)")
-    loc_parser.add_argument("--dpi", type=int, default=150, help="PDF extraction DPI (default: 150)")
+    loc_parser.add_argument(
+        "--dpi", type=int, default=150, help="PDF extraction DPI (default: 150)"
+    )
 
     # PPT command
     ppt_parser = subparsers.add_parser("ppt", help="Create PowerPoint from PDF or images")
     ppt_parser.add_argument("--input", "-i", help="PDF file or images folder")
     ppt_parser.add_argument("--output", "-o", help="Output .pptx file")
     ppt_parser.add_argument("--script", "-s", help="Voiceover script for slide notes")
-    ppt_parser.add_argument("--dpi", type=int, default=150, help="PDF extraction DPI (default: 150)")
-    ppt_parser.add_argument("--keep-images", action="store_true",
-                            help="Keep extracted images when converting PDF")
+    ppt_parser.add_argument(
+        "--dpi", type=int, default=150, help="PDF extraction DPI (default: 150)"
+    )
+    ppt_parser.add_argument(
+        "--keep-images", action="store_true", help="Keep extracted images when converting PDF"
+    )
 
     # Video command
     video_parser = subparsers.add_parser("video", help="Generate video from slides and audio")
-    video_parser.add_argument("--pdf", "-p", help="PDF file (runs full pipeline: extract, script, audio, video)")
+    video_parser.add_argument(
+        "--pdf", "-p", help="PDF file (runs full pipeline: extract, script, audio, video)"
+    )
     video_parser.add_argument("--images", "-i", help="Images directory (if not using --pdf)")
     video_parser.add_argument("--audio", "-a", help="Audio directory (if not using --pdf)")
-    video_parser.add_argument("--script", "-s", help="Existing voiceover script (optional with --pdf)")
+    video_parser.add_argument(
+        "--script", "-s", help="Existing voiceover script (optional with --pdf)"
+    )
     video_parser.add_argument("--output", "-o", help="Output video file")
-    video_parser.add_argument("--resolution", "-r", default="1920:1080", help="Video resolution (default: 1920:1080)")
-    video_parser.add_argument("--voice", default="Orus",
-                              choices=["Puck", "Charon", "Kore", "Fenrir", "Aoede", "Orus"],
-                              help="TTS voice for audio generation (default: Orus)")
+    video_parser.add_argument(
+        "--resolution", "-r", default="1920:1080", help="Video resolution (default: 1920:1080)"
+    )
+    video_parser.add_argument(
+        "--voice",
+        default="Orus",
+        choices=["Puck", "Charon", "Kore", "Fenrir", "Aoede", "Orus"],
+        help="TTS voice for audio generation (default: Orus)",
+    )
 
     args = parser.parse_args()
 

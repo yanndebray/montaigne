@@ -48,33 +48,33 @@ def parse_voiceover_script(script_path: Path) -> List[Dict]:
         if title_match:
             title = title_match.group(1)
         else:
-            first_line = slide_content.strip().split('\n')[0]
+            first_line = slide_content.strip().split("\n")[0]
             title = first_line.strip() if first_line else f"Slide {slide_num}"
 
         # Extract voiceover text (content after Duration marker)
-        lines = slide_content.split('\n')
+        lines = slide_content.split("\n")
         voiceover_lines = []
         capture = False
 
         for line in lines:
-            if 'Duration:' in line or 'DURATION:' in line:
+            if "Duration:" in line or "DURATION:" in line:
                 capture = True
                 continue
-            if line.startswith('---') or line.startswith('## '):
+            if line.startswith("---") or line.startswith("## "):
                 break
             if capture and line.strip():
                 stripped = line.strip()
-                if stripped and not stripped.startswith('**') and not stripped.startswith('*Duration'):
+                if (
+                    stripped
+                    and not stripped.startswith("**")
+                    and not stripped.startswith("*Duration")
+                ):
                     voiceover_lines.append(stripped)
 
-        voiceover_text = ' '.join(voiceover_lines)
+        voiceover_text = " ".join(voiceover_lines)
 
         if voiceover_text:
-            parsed_slides.append({
-                'number': slide_num,
-                'title': title[:50],
-                'text': voiceover_text
-            })
+            parsed_slides.append({"number": slide_num, "title": title[:50], "text": voiceover_text})
 
     return parsed_slides
 
@@ -132,18 +132,25 @@ def _convert_to_wav(audio_data: bytes, mime_type: str) -> bytes:
 
     header = struct.pack(
         "<4sI4s4sIHHIIHH4sI",
-        b"RIFF", chunk_size, b"WAVE", b"fmt ", 16, 1,
-        num_channels, sample_rate, byte_rate, block_align,
-        bits_per_sample, b"data", data_size
+        b"RIFF",
+        chunk_size,
+        b"WAVE",
+        b"fmt ",
+        16,
+        1,
+        num_channels,
+        sample_rate,
+        byte_rate,
+        block_align,
+        bits_per_sample,
+        b"data",
+        data_size,
     )
     return header + audio_data
 
 
 def generate_slide_audio(
-    text: str,
-    output_path: Path,
-    voice: str = DEFAULT_VOICE,
-    client=None
+    text: str, output_path: Path, voice: str = DEFAULT_VOICE, client=None
 ) -> Path:
     """
     Generate audio for a single text using Gemini TTS.
@@ -184,9 +191,11 @@ def generate_slide_audio(
         contents=contents,
         config=config,
     ):
-        if (chunk.candidates is None or
-            chunk.candidates[0].content is None or
-            chunk.candidates[0].content.parts is None):
+        if (
+            chunk.candidates is None
+            or chunk.candidates[0].content is None
+            or chunk.candidates[0].content.parts is None
+        ):
             continue
 
         part = chunk.candidates[0].content.parts[0]
@@ -202,9 +211,7 @@ def generate_slide_audio(
 
 
 def generate_audio(
-    script_path: Path,
-    output_dir: Optional[Path] = None,
-    voice: str = DEFAULT_VOICE
+    script_path: Path, output_dir: Optional[Path] = None, voice: str = DEFAULT_VOICE
 ) -> List[Path]:
     """
     Generate audio for all slides in a voiceover script.
@@ -236,7 +243,7 @@ def generate_audio(
 
         try:
             output_path = output_dir / f"slide_{slide['number']:02d}.wav"
-            generate_slide_audio(slide['text'], output_path, voice=voice, client=client)
+            generate_slide_audio(slide["text"], output_path, voice=voice, client=client)
             generated_files.append(output_path)
             print(f"    Saved: {output_path.name}")
         except Exception as e:

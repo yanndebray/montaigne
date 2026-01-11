@@ -5,10 +5,7 @@ from typing import List, Optional
 
 
 def extract_pdf_pages(
-    pdf_path: Path,
-    output_dir: Optional[Path] = None,
-    dpi: int = 150,
-    image_format: str = "png"
+    pdf_path: Path, output_dir: Optional[Path] = None, dpi: int = 150, image_format: str = "png"
 ) -> List[Path]:
     """
     Extract all pages from a PDF as individual images.

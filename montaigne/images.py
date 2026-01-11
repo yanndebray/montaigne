@@ -18,7 +18,7 @@ def _save_image(file_path: Path, data: Union[str, bytes]):
     elif isinstance(data, bytes):
         # Check if bytes look like base64-encoded data
         try:
-            if data[:4] in (b'/9j/', b'iVBO', b'R0lG', b'UklG'):
+            if data[:4] in (b"/9j/", b"iVBO", b"R0lG", b"UklG"):
                 data = base64.b64decode(data)
         except Exception:
             pass
@@ -28,10 +28,7 @@ def _save_image(file_path: Path, data: Union[str, bytes]):
 
 
 def translate_image(
-    image_path: Path,
-    output_path: Optional[Path] = None,
-    target_lang: str = "French",
-    client=None
+    image_path: Path, output_path: Optional[Path] = None, target_lang: str = "French", client=None
 ) -> Path:
     """
     Translate text in an image to target language using Gemini.
@@ -75,11 +72,13 @@ def translate_image(
             role="user",
             parts=[
                 types.Part.from_bytes(mime_type=mime_type, data=image_data),
-                types.Part.from_text(text=f"""Generate a new image based on this one with the following changes:
+                types.Part.from_text(
+                    text=f"""Generate a new image based on this one with the following changes:
 1. Translate all text to {target_lang}
 2. Keep the same layout, colors, and visual style
 
-Output the modified image, not text."""),
+Output the modified image, not text."""
+                ),
             ],
         ),
     ]
@@ -92,9 +91,11 @@ Output the modified image, not text."""),
         contents=contents,
         config=config,
     ):
-        if (chunk.candidates is None or
-            chunk.candidates[0].content is None or
-            chunk.candidates[0].content.parts is None):
+        if (
+            chunk.candidates is None
+            or chunk.candidates[0].content is None
+            or chunk.candidates[0].content.parts is None
+        ):
             continue
 
         part = chunk.candidates[0].content.parts[0]
@@ -111,9 +112,7 @@ Output the modified image, not text."""),
 
 
 def translate_images(
-    input_path: Path,
-    output_dir: Optional[Path] = None,
-    target_lang: str = "French"
+    input_path: Path, output_dir: Optional[Path] = None, target_lang: str = "French"
 ) -> List[Path]:
     """
     Translate images from input path (file or directory).
@@ -134,10 +133,7 @@ def translate_images(
         if output_dir is None:
             output_dir = input_path.parent / "images_translated"
     elif input_path.is_dir():
-        images = sorted([
-            f for f in input_path.iterdir()
-            if f.suffix.lower() in IMAGE_EXTENSIONS
-        ])
+        images = sorted([f for f in input_path.iterdir() if f.suffix.lower() in IMAGE_EXTENSIONS])
         if output_dir is None:
             output_dir = input_path.parent / f"{input_path.name}_translated"
     else:

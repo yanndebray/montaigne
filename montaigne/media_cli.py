@@ -27,6 +27,7 @@ def check_dependencies():
     try:
         from dotenv import load_dotenv
         from google import genai
+
         return True
     except ImportError:
         return False
@@ -42,6 +43,7 @@ def install_dependencies():
 def load_api_key():
     """Load the Gemini API key from .env file."""
     from dotenv import load_dotenv
+
     load_dotenv()
 
     api_key = os.environ.get("GEMINI_API_KEY")
@@ -53,6 +55,7 @@ def load_api_key():
 
 
 # ============== Audio Generation ==============
+
 
 def parse_voiceover_script(script_path):
     """Parse the voiceover script and extract text for each slide.
@@ -80,34 +83,40 @@ def parse_voiceover_script(script_path):
         if title_match:
             title = title_match.group(1)
         else:
-            first_line = slide_content.strip().split('\n')[0]
+            first_line = slide_content.strip().split("\n")[0]
             title = first_line.strip() if first_line else f"Slide {slide_num}"
 
-        lines = slide_content.split('\n')
+        lines = slide_content.split("\n")
         voiceover_lines = []
         capture = False
 
         for line in lines:
             # Support Duration/Durée in various formats
-            if 'Duration:' in line or 'DURATION:' in line or 'Durée' in line or 'DURÉE' in line:
+            if "Duration:" in line or "DURATION:" in line or "Durée" in line or "DURÉE" in line:
                 capture = True
                 continue
-            if line.startswith('---') or line.startswith('## '):
+            if line.startswith("---") or line.startswith("## "):
                 break
             if capture and line.strip():
                 # Skip lines that are just formatting markers
                 stripped = line.strip()
-                if stripped and not stripped.startswith('**') and not stripped.startswith('*Duration'):
+                if (
+                    stripped
+                    and not stripped.startswith("**")
+                    and not stripped.startswith("*Duration")
+                ):
                     voiceover_lines.append(stripped)
 
-        voiceover_text = ' '.join(voiceover_lines)
+        voiceover_text = " ".join(voiceover_lines)
 
         if voiceover_text:
-            parsed_slides.append({
-                'number': slide_num,
-                'title': title[:50],  # Truncate long titles
-                'text': voiceover_text
-            })
+            parsed_slides.append(
+                {
+                    "number": slide_num,
+                    "title": title[:50],  # Truncate long titles
+                    "text": voiceover_text,
+                }
+            )
 
     return parsed_slides
 
@@ -148,9 +157,19 @@ def convert_to_wav(audio_data: bytes, mime_type: str) -> bytes:
 
     header = struct.pack(
         "<4sI4s4sIHHIIHH4sI",
-        b"RIFF", chunk_size, b"WAVE", b"fmt ", 16, 1,
-        num_channels, sample_rate, byte_rate, block_align,
-        bits_per_sample, b"data", data_size
+        b"RIFF",
+        chunk_size,
+        b"WAVE",
+        b"fmt ",
+        16,
+        1,
+        num_channels,
+        sample_rate,
+        byte_rate,
+        block_align,
+        bits_per_sample,
+        b"data",
+        data_size,
     )
     return header + audio_data
 
@@ -175,7 +194,7 @@ def generate_audio(script_path: Path, output_dir: Path, voice: str = "Orus"):
             contents = [
                 types.Content(
                     role="user",
-                    parts=[types.Part.from_text(text=slide['text'])],
+                    parts=[types.Part.from_text(text=slide["text"])],
                 ),
             ]
 
@@ -194,9 +213,11 @@ def generate_audio(script_path: Path, output_dir: Path, voice: str = "Orus"):
                 contents=contents,
                 config=config,
             ):
-                if (chunk.candidates is None or
-                    chunk.candidates[0].content is None or
-                    chunk.candidates[0].content.parts is None):
+                if (
+                    chunk.candidates is None
+                    or chunk.candidates[0].content is None
+                    or chunk.candidates[0].content.parts is None
+                ):
                     continue
 
                 part = chunk.candidates[0].content.parts[0]
@@ -222,13 +243,14 @@ def generate_audio(script_path: Path, output_dir: Path, voice: str = "Orus"):
 
 # ============== Image Translation ==============
 
+
 def save_image(file_name, data):
     """Save image data, handling base64 encoding if necessary."""
     if isinstance(data, str):
         data = base64.b64decode(data)
     elif isinstance(data, bytes):
         try:
-            if data[:4] in (b'/9j/', b'iVBO', b'R0lG', b'UklG'):
+            if data[:4] in (b"/9j/", b"iVBO", b"R0lG", b"UklG"):
                 data = base64.b64decode(data)
         except Exception:
             pass
@@ -255,11 +277,13 @@ def translate_image(client, image_path: Path, output_dir: Path, target_lang: str
             role="user",
             parts=[
                 types.Part.from_bytes(mime_type=mime_type, data=image_data),
-                types.Part.from_text(text=f"""Generate a new image based on this one with the following changes:
+                types.Part.from_text(
+                    text=f"""Generate a new image based on this one with the following changes:
 1. Translate all text to {target_lang}
 2. Keep the same layout, colors, and visual style
 
-Output the modified image, not text."""),
+Output the modified image, not text."""
+                ),
             ],
         ),
     ]
@@ -271,9 +295,11 @@ Output the modified image, not text."""),
         contents=contents,
         config=config,
     ):
-        if (chunk.candidates is None or
-            chunk.candidates[0].content is None or
-            chunk.candidates[0].content.parts is None):
+        if (
+            chunk.candidates is None
+            or chunk.candidates[0].content is None
+            or chunk.candidates[0].content.parts is None
+        ):
             continue
 
         part = chunk.candidates[0].content.parts[0]
@@ -284,7 +310,7 @@ Output the modified image, not text."""),
 
             save_image(output_path, part.inline_data.data)
             print(f"    Saved: {output_name}")
-        elif hasattr(part, 'text') and part.text:
+        elif hasattr(part, "text") and part.text:
             print(f"    Model response: {part.text[:100]}...")
 
 
@@ -317,6 +343,7 @@ def translate_images(input_path: Path, output_dir: Path, target_lang: str = "Fre
 
 # ============== CLI Commands ==============
 
+
 def cmd_setup(args):
     """Setup command: install dependencies and verify configuration."""
     print("=== Setup ===\n")
@@ -328,6 +355,7 @@ def cmd_setup(args):
 
     # Re-import after install
     from dotenv import load_dotenv
+
     load_dotenv()
 
     api_key = os.environ.get("GEMINI_API_KEY")
@@ -379,7 +407,11 @@ def cmd_images(args):
         input_path = Path(args.input)
     else:
         # Look for image files or folders
-        images = list(project_dir.glob("*.png")) + list(project_dir.glob("*.jpg")) + list(project_dir.glob("*.jpeg"))
+        images = (
+            list(project_dir.glob("*.png"))
+            + list(project_dir.glob("*.jpg"))
+            + list(project_dir.glob("*.jpeg"))
+        )
         if images:
             input_path = images[0]
             print(f"Auto-detected: {input_path.name}")
@@ -412,7 +444,7 @@ Examples:
   python media_cli.py images                   # Translate auto-detected images
   python media_cli.py images --input img.png  # Translate specific image
   python media_cli.py all                      # Run everything
-        """
+        """,
     )
 
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
@@ -423,9 +455,12 @@ Examples:
     # Audio command
     audio_parser = subparsers.add_parser("audio", help="Generate audio from voiceover scripts")
     audio_parser.add_argument("--script", help="Path to specific voiceover script")
-    audio_parser.add_argument("--voice", default="Orus",
-                              choices=["Puck", "Charon", "Kore", "Fenrir", "Aoede", "Orus"],
-                              help="Voice to use (default: Orus)")
+    audio_parser.add_argument(
+        "--voice",
+        default="Orus",
+        choices=["Puck", "Charon", "Kore", "Fenrir", "Aoede", "Orus"],
+        help="Voice to use (default: Orus)",
+    )
 
     # Images command
     images_parser = subparsers.add_parser("images", help="Translate images")

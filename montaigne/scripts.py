@@ -37,11 +37,7 @@ def _get_arc_position(slide_num: int, total: int) -> str:
         return "Closing - inspiring, forward-looking, call to action"
 
 
-def analyze_presentation_overview(
-    images: List[Path],
-    context: str = "",
-    client=None
-) -> dict:
+def analyze_presentation_overview(images: List[Path], context: str = "", client=None) -> dict:
     """
     First pass: analyze all slides to create a presentation overview.
 
@@ -125,7 +121,7 @@ NARRATIVE_NOTES: [2-3 sentences about the narrative arc - how the presentation f
         "total_duration": f"{len(images) * 1}-{len(images) * 2} minutes",
         "slide_summaries": [f"Slide {i+1}" for i in range(len(images))],
         "terminology": [],
-        "narrative_notes": ""
+        "narrative_notes": "",
     }
 
     # Extract each field
@@ -187,7 +183,7 @@ def generate_slide_script(
     total_slides: int = 1,
     previous_summary: str = "",
     upcoming_preview: str = "",
-    presentation_overview: Optional[dict] = None
+    presentation_overview: Optional[dict] = None,
 ) -> dict:
     """
     Generate a voiceover script for a single slide image using Gemini.
@@ -323,14 +319,12 @@ SCRIPT:
         "title": title,
         "tone": slide_tone,
         "duration": duration,
-        "text": script
+        "text": script,
     }
 
 
 def generate_scripts(
-    input_path: Path,
-    output_path: Optional[Path] = None,
-    context: str = ""
+    input_path: Path, output_path: Optional[Path] = None, context: str = ""
 ) -> Path:
     """
     Generate voiceover scripts from PDF or image folder.
@@ -358,10 +352,7 @@ def generate_scripts(
         images = extract_pdf_pages(input_path, output_dir=images_dir)
         base_name = input_path.stem
     elif input_path.is_dir():
-        images = sorted([
-            f for f in input_path.iterdir()
-            if f.suffix.lower() in IMAGE_EXTENSIONS
-        ])
+        images = sorted([f for f in input_path.iterdir() if f.suffix.lower() in IMAGE_EXTENSIONS])
         base_name = input_path.name
     elif input_path.is_file() and input_path.suffix.lower() in IMAGE_EXTENSIONS:
         images = [input_path]
@@ -396,7 +387,7 @@ def generate_scripts(
             "total_duration": f"{total_slides}-{total_slides * 2} minutes",
             "slide_summaries": [f"Slide {i+1}" for i in range(total_slides)],
             "terminology": [],
-            "narrative_notes": ""
+            "narrative_notes": "",
         }
 
     # === PASS 2: Generate individual scripts with context ===
@@ -425,26 +416,26 @@ def generate_scripts(
                 total_slides=total_slides,
                 previous_summary=previous_summary,
                 upcoming_preview=upcoming_preview,
-                presentation_overview=overview
+                presentation_overview=overview,
             )
             slides_data.append(slide_data)
             print(f"    [OK] {slide_data['title'][:40]}...")
         except Exception as e:
             print(f"    [ERROR] {e}")
-            slides_data.append({
-                "number": i,
-                "title": f"Slide {i}",
-                "tone": "Professional",
-                "duration": "30 seconds",
-                "text": f"[Script generation failed: {e}]"
-            })
+            slides_data.append(
+                {
+                    "number": i,
+                    "title": f"Slide {i}",
+                    "tone": "Professional",
+                    "duration": "30 seconds",
+                    "text": f"[Script generation failed: {e}]",
+                }
+            )
 
     # === Generate production notes ===
     print("\nGenerating production notes...")
     production_notes = _generate_production_notes(
-        terminology=overview.get("terminology", []),
-        slides=slides_data,
-        overview=overview
+        terminology=overview.get("terminology", []), slides=slides_data, overview=overview
     )
 
     # === Format and save output ===
@@ -452,7 +443,7 @@ def generate_scripts(
         slides=slides_data,
         title=overview.get("topic", base_name),
         overview=overview,
-        production_notes=production_notes
+        production_notes=production_notes,
     )
 
     with open(output_path, "w", encoding="utf-8") as f:
@@ -464,11 +455,7 @@ def generate_scripts(
     return output_path
 
 
-def _generate_production_notes(
-    terminology: List[str],
-    slides: List[dict],
-    overview: dict
-) -> dict:
+def _generate_production_notes(terminology: List[str], slides: List[dict], overview: dict) -> dict:
     """
     Generate production notes including pronunciation guide.
 
@@ -524,8 +511,10 @@ def _generate_production_notes(
         term_lower = term.lower().replace(" ", "").replace("-", "")
         # Check if we have a known pronunciation
         for key, pron in pronunciation_rules.items():
-            if key.replace("-", "").replace(".", "") in term_lower or term_lower in key.replace("-", "").replace(".", ""):
-                pron_lines.append(f"- `{term}`: \"{pron}\"")
+            if key.replace("-", "").replace(".", "") in term_lower or term_lower in key.replace(
+                "-", ""
+            ).replace(".", ""):
+                pron_lines.append(f'- `{term}`: "{pron}"')
                 break
         else:
             # If not found, add the term as-is for manual review
@@ -539,7 +528,9 @@ def _generate_production_notes(
     max_duration = total_words // 130
 
     return {
-        "pronunciation": "\n".join(pron_lines) if pron_lines else "No special pronunciations noted.",
+        "pronunciation": (
+            "\n".join(pron_lines) if pron_lines else "No special pronunciations noted."
+        ),
         "word_count": total_words,
         "estimated_duration": f"{min_duration}-{max_duration} minutes",
         "delivery": """- Maintain a steady, confident pace throughout
@@ -549,7 +540,7 @@ def _generate_production_notes(
         "music": """- Opening slides: Subtle, building anticipation
 - Body/technical slides: Steady, focused energy
 - Synthesis slides: Practical, grounded
-- Closing slide: Inspiring, resolving"""
+- Closing slide: Inspiring, resolving""",
     }
 
 
@@ -557,7 +548,7 @@ def _format_scripts_markdown(
     slides: List[dict],
     title: str,
     overview: Optional[dict] = None,
-    production_notes: Optional[dict] = None
+    production_notes: Optional[dict] = None,
 ) -> str:
     """
     Format slide scripts as markdown with rich metadata.
@@ -572,70 +563,63 @@ def _format_scripts_markdown(
         Formatted markdown string
     """
     # Header with metadata
-    lines = [
-        f"# {title}",
-        "## Voice-Over Script",
-        ""
-    ]
+    lines = [f"# {title}", "## Voice-Over Script", ""]
 
     # Add overview metadata if available
     if overview:
-        lines.extend([
-            f"**Total Duration:** ~{overview.get('total_duration', 'Unknown')}",
-            f"**Target Audience:** {overview.get('audience', 'General audience')}",
-            f"**Tone:** {overview.get('tone', 'Professional')}",
-            ""
-        ])
+        lines.extend(
+            [
+                f"**Total Duration:** ~{overview.get('total_duration', 'Unknown')}",
+                f"**Target Audience:** {overview.get('audience', 'General audience')}",
+                f"**Tone:** {overview.get('tone', 'Professional')}",
+                "",
+            ]
+        )
     else:
-        lines.extend([
-            f"**Total slides:** {len(slides)}",
-            ""
-        ])
+        lines.extend([f"**Total slides:** {len(slides)}", ""])
 
     lines.extend(["---", ""])
 
     # Individual slides
     for slide in slides:
-        lines.extend([
-            f"## Slide {slide['number']}: {slide['title']}",
-            f"**Duration:** {slide.get('duration', '30-45 seconds')}",
-        ])
+        lines.extend(
+            [
+                f"## Slide {slide['number']}: {slide['title']}",
+                f"**Duration:** {slide.get('duration', '30-45 seconds')}",
+            ]
+        )
 
         # Add tone if available
-        if slide.get('tone'):
+        if slide.get("tone"):
             lines.append(f"**Tone:** {slide['tone']}")
 
-        lines.extend([
-            "",
-            "### Voice-Over:",
-            "",
-            slide.get('text', '[No script generated]'),
-            "",
-            "---",
-            ""
-        ])
+        lines.extend(
+            ["", "### Voice-Over:", "", slide.get("text", "[No script generated]"), "", "---", ""]
+        )
 
     # Add production notes section if available
     if production_notes:
-        lines.extend([
-            "## Production Notes",
-            "",
-            "### General Guidance",
-            production_notes.get('delivery', ''),
-            "",
-            f"### Estimated Reading Time",
-            f"- **Word count:** ~{production_notes.get('word_count', 0):,} words",
-            f"- **Duration at presentation pace:** {production_notes.get('estimated_duration', 'Unknown')}",
-            "",
-            "### Pronunciation Guide",
-            production_notes.get('pronunciation', 'No special pronunciations noted.'),
-            "",
-            "### Music/Sound Suggestions",
-            production_notes.get('music', ''),
-            "",
-            "---",
-            "",
-            "*Script generated with Montaigne*",
-        ])
+        lines.extend(
+            [
+                "## Production Notes",
+                "",
+                "### General Guidance",
+                production_notes.get("delivery", ""),
+                "",
+                f"### Estimated Reading Time",
+                f"- **Word count:** ~{production_notes.get('word_count', 0):,} words",
+                f"- **Duration at presentation pace:** {production_notes.get('estimated_duration', 'Unknown')}",
+                "",
+                "### Pronunciation Guide",
+                production_notes.get("pronunciation", "No special pronunciations noted."),
+                "",
+                "### Music/Sound Suggestions",
+                production_notes.get("music", ""),
+                "",
+                "---",
+                "",
+                "*Script generated with Montaigne*",
+            ]
+        )
 
     return "\n".join(lines)

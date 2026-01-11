@@ -50,9 +50,7 @@ def parse_script_to_slides(script_path: Path) -> List[str]:
 
 
 def images_to_pptx(
-    images: List[Path],
-    output_path: Path,
-    notes: Optional[List[str]] = None
+    images: List[Path], output_path: Path, notes: Optional[List[str]] = None
 ) -> Path:
     """
     Create a PowerPoint presentation from a list of images.
@@ -88,6 +86,7 @@ def images_to_pptx(
         # Add image to fill the slide
         # Calculate dimensions to fit while maintaining aspect ratio
         from PIL import Image
+
         with Image.open(image_path) as img:
             img_width, img_height = img.size
 
@@ -124,7 +123,7 @@ def pdf_to_pptx(
     output_path: Optional[Path] = None,
     script_path: Optional[Path] = None,
     dpi: int = 150,
-    keep_images: bool = False
+    keep_images: bool = False,
 ) -> Path:
     """
     Convert a PDF to a PowerPoint presentation.
@@ -187,9 +186,7 @@ def pdf_to_pptx(
 
 
 def folder_to_pptx(
-    folder_path: Path,
-    output_path: Optional[Path] = None,
-    script_path: Optional[Path] = None
+    folder_path: Path, output_path: Optional[Path] = None, script_path: Optional[Path] = None
 ) -> Path:
     """
     Convert a folder of images to a PowerPoint presentation.
@@ -211,10 +208,7 @@ def folder_to_pptx(
         raise ValueError(f"Not a directory: {folder_path}")
 
     # Find all images in folder
-    images = sorted([
-        f for f in folder_path.iterdir()
-        if f.suffix.lower() in IMAGE_EXTENSIONS
-    ])
+    images = sorted([f for f in folder_path.iterdir() if f.suffix.lower() in IMAGE_EXTENSIONS])
 
     if not images:
         raise ValueError(f"No images found in {folder_path}")
@@ -247,7 +241,7 @@ def create_pptx(
     output_path: Optional[Path] = None,
     script_path: Optional[Path] = None,
     dpi: int = 150,
-    keep_images: bool = False
+    keep_images: bool = False,
 ) -> Path:
     """
     Create a PowerPoint presentation from PDF or image folder.
@@ -272,13 +266,9 @@ def create_pptx(
             output_path=output_path,
             script_path=script_path,
             dpi=dpi,
-            keep_images=keep_images
+            keep_images=keep_images,
         )
     elif input_path.is_dir():
-        return folder_to_pptx(
-            input_path,
-            output_path=output_path,
-            script_path=script_path
-        )
+        return folder_to_pptx(input_path, output_path=output_path, script_path=script_path)
     else:
         raise ValueError(f"Input must be a PDF file or folder of images: {input_path}")
