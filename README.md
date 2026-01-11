@@ -110,6 +110,23 @@ This will:
 2. Translate all images to the target language
 3. Generate audio for all slides
 
+## Claude Command: Presentation Video Workflow
+
+`montaigne/.claude/commands/presentation-video.md`
+
+Invoke with:
+```
+/presentation-video $PDF_PATH=path/to/deck.pdf $CONTEXT_FOLDER=path/to/context $MAX_DURATION=60 $VOICE=Orus
+```
+
+The command automates the complete workflow:
+- Extract context from .docx, .pdf, .md files
+- Analyze presentation slides
+- Generate voiceover script with configurable max duration per slide
+- Generate TTS audio
+- Create final video
+- Optional localization to other languages
+
 ## Voiceover Script Format
 
 Scripts should follow this markdown format:
