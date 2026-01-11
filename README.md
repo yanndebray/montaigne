@@ -13,8 +13,23 @@ Media processing toolkit for presentation localization using Google Gemini AI.
 
 ## Installation
 
+### Using pip
+
 ```bash
-pip install -e .
+pip install montaigne
+```
+
+### Using uv
+
+```bash
+uv pip install montaigne
+```
+
+### Using uvx (no installation required)
+
+```bash
+uvx --from montaigne essai setup
+uvx --from montaigne essai script --input presentation.pdf
 ```
 
 ## Setup
@@ -49,7 +64,7 @@ essai script --input presentation.pdf --output custom_script.md
 Options:
 - `--input, -i`: PDF file or folder of slide images
 - `--output, -o`: Output markdown file path
-- `--context, -c`: Additional context to guide script generation. Use this to specify the topic, target audience, desired tone, or script length (e.g., "Brief 2-sentence scripts" or "Detailed technical explanations for developers")
+- `--context, -c`: Additional context to guide script generation. Use this to specify the topic, target audience, desired tone, or script length (e.g., "Brief scripts, 2-3 sentences per slide" or "Detailed technical explanations for developers")
 
 ### Generate Audio from Script
 
