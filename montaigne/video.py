@@ -190,26 +190,11 @@ def generate_video_from_pdf(
     script_path: Optional[Path] = None,
     output_path: Optional[Path] = None,
     resolution: str = "1920:1080",
-    voice: str = "Orus",
+    voice: Optional[str] = None,      # Changed to Optional
+    provider: str = "gemini",         # <--- Added this
 ) -> Path:
     """
     Generate a complete video from a PDF presentation.
-
-    This runs the full pipeline:
-    1. Extract PDF pages to images
-    2. Generate voiceover script (if not provided)
-    3. Generate audio from script
-    4. Combine into video
-
-    Args:
-        pdf_path: Path to PDF file
-        script_path: Optional path to existing voiceover script
-        output_path: Path for output video
-        resolution: Video resolution (default: 1920:1080)
-        voice: TTS voice for audio generation
-
-    Returns:
-        Path to the generated video
     """
     from .pdf import extract_pdf_pages
     from .scripts import generate_scripts
@@ -218,7 +203,7 @@ def generate_video_from_pdf(
     pdf_path = Path(pdf_path)
     base_name = pdf_path.stem
 
-    print(f"=== Generating Video from {pdf_path.name} ===\n")
+    print(f"=== Generating Video from {pdf_path.name} ({provider.upper()}) ===\n")
 
     # Step 1: Extract PDF pages
     print("Step 1: Extracting PDF pages...")
@@ -236,7 +221,8 @@ def generate_video_from_pdf(
     # Step 3: Generate audio
     print("\nStep 3: Generating audio...")
     audio_dir = script_path.parent / f"{script_path.stem}_audio"
-    generate_audio(script_path, output_dir=audio_dir, voice=voice)
+    # Added 'provider' here so it knows whether to use Gemini or ElevenLabs
+    generate_audio(script_path, output_dir=audio_dir, voice=voice, provider=provider)
 
     # Step 4: Generate video
     print("\nStep 4: Creating video...")

@@ -32,6 +32,7 @@ dependencies = [
     "python-pptx>=0.6.21",
     "Pillow>=10.0.0",
     "tqdm>=4.65.0",
+    "elevenlabs>=2.29.0",
 ]
 
 [project.optional-dependencies]
