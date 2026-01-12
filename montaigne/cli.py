@@ -273,6 +273,255 @@ def cmd_webapp(args):
     subprocess.run([sys.executable, "-m", "streamlit", "run", str(app_path)])
 
 
+# =============================================================================
+# Cloud Commands
+# =============================================================================
+
+def cmd_cloud_health(args):
+    """Check cloud API health."""
+    import requests
+    from .cloud_config import get_api_url
+
+    api_url = args.api_url or get_api_url()
+    print(f"Checking cloud API: {api_url}")
+
+    try:
+        response = requests.get(f"{api_url}/health", timeout=10)
+        response.raise_for_status()
+        data = response.json()
+
+        print(f"\nStatus: {data.get('status', 'unknown')}")
+        print(f"Version: {data.get('version', 'unknown')}")
+        print(f"FFmpeg: {'available' if data.get('ffmpeg') else 'not available'}")
+    except requests.exceptions.ConnectionError:
+        print(f"\nError: Could not connect to {api_url}")
+        print("Make sure the cloud API is deployed and the URL is correct.")
+        sys.exit(1)
+    except Exception as e:
+        print(f"\nError: {e}")
+        sys.exit(1)
+
+
+def cmd_cloud_video(args):
+    """Generate video via cloud API."""
+    import requests
+    import time
+    from .cloud_config import get_api_url
+
+    api_url = args.api_url or get_api_url()
+    pdf_path = Path(args.pdf)
+
+    if not pdf_path.exists():
+        print(f"Error: PDF file not found: {pdf_path}")
+        sys.exit(1)
+
+    print(f"=== Cloud Video Generation ===")
+    print(f"API: {api_url}")
+    print(f"PDF: {pdf_path.name}")
+
+    # Step 1: Get upload URL
+    print("\nStep 1: Requesting upload URL...")
+    response = requests.post(
+        f"{api_url}/jobs/upload-url",
+        json={
+            "filename": pdf_path.name,
+            "content_type": "application/pdf",
+            "size_bytes": pdf_path.stat().st_size,
+        },
+    )
+    response.raise_for_status()
+    upload_data = response.json()
+    job_id = upload_data["job_id"]
+    print(f"Job ID: {job_id}")
+
+    # Step 2: Upload PDF
+    print(f"\nStep 2: Uploading {pdf_path.name}...")
+    with open(pdf_path, "rb") as f:
+        upload_response = requests.put(
+            upload_data["upload_url"],
+            data=f,
+            headers={"Content-Type": "application/pdf"},
+        )
+        upload_response.raise_for_status()
+    print("Upload complete.")
+
+    # Step 3: Start processing
+    print("\nStep 3: Starting video generation...")
+    response = requests.post(
+        f"{api_url}/jobs/{job_id}/start",
+        json={
+            "pipeline": "video",
+            "resolution": args.resolution,
+            "voice": args.voice,
+            "context": args.context or "",
+        },
+    )
+    response.raise_for_status()
+
+    if not args.wait:
+        print(f"\nJob submitted. Check status with:")
+        print(f"  essai cloud status {job_id}")
+        print(f"\nDownload when complete with:")
+        print(f"  essai cloud download {job_id} -o output.mp4")
+        return
+
+    # Step 4: Wait for completion
+    print("\nStep 4: Processing...")
+    last_message = ""
+    while True:
+        response = requests.get(f"{api_url}/jobs/{job_id}/status")
+        response.raise_for_status()
+        status_data = response.json()
+
+        status = status_data.get("status")
+        progress = status_data.get("progress", {})
+        message = progress.get("message", "")
+
+        if message != last_message:
+            print(f"  {message}")
+            last_message = message
+
+        if status == "completed":
+            break
+        elif status == "failed":
+            error = status_data.get("error", {})
+            print(f"\nError: {error.get('message', 'Unknown error')}")
+            sys.exit(1)
+
+        time.sleep(2)
+
+    # Step 5: Download video
+    output_path = Path(args.output) if args.output else Path(f"{pdf_path.stem}_video.mp4")
+    print(f"\nStep 5: Downloading video to {output_path}...")
+
+    response = requests.get(f"{api_url}/jobs/{job_id}/download?file=video")
+    response.raise_for_status()
+    download_data = response.json()
+
+    video_response = requests.get(download_data["download_url"], stream=True)
+    video_response.raise_for_status()
+
+    with open(output_path, "wb") as f:
+        for chunk in video_response.iter_content(chunk_size=8192):
+            f.write(chunk)
+
+    size_mb = output_path.stat().st_size / (1024 * 1024)
+    print(f"\nComplete! Video saved to: {output_path} ({size_mb:.1f} MB)")
+
+
+def cmd_cloud_status(args):
+    """Check job status."""
+    import requests
+    from .cloud_config import get_api_url
+
+    api_url = args.api_url or get_api_url()
+
+    response = requests.get(f"{api_url}/jobs/{args.job_id}/status")
+
+    if response.status_code == 404:
+        print(f"Job not found: {args.job_id}")
+        sys.exit(1)
+
+    response.raise_for_status()
+    data = response.json()
+
+    print(f"Job ID: {data.get('job_id')}")
+    print(f"Status: {data.get('status')}")
+    print(f"Pipeline: {data.get('pipeline', 'unknown')}")
+
+    if data.get("progress"):
+        progress = data["progress"]
+        print(f"\nProgress:")
+        print(f"  Step: {progress.get('step')}")
+        if progress.get("current") is not None:
+            print(f"  Progress: {progress.get('current')}/{progress.get('total')}")
+        if progress.get("message"):
+            print(f"  Message: {progress.get('message')}")
+
+    if data.get("created_at"):
+        print(f"\nCreated: {data.get('created_at')}")
+    if data.get("started_at"):
+        print(f"Started: {data.get('started_at')}")
+    if data.get("completed_at"):
+        print(f"Completed: {data.get('completed_at')}")
+
+    if data.get("output"):
+        output = data["output"]
+        print(f"\nOutput:")
+        if output.get("video_size_bytes"):
+            size_mb = output["video_size_bytes"] / (1024 * 1024)
+            print(f"  Video size: {size_mb:.1f} MB")
+        if output.get("download_expires"):
+            print(f"  Download expires: {output['download_expires']}")
+
+    if data.get("error"):
+        error = data["error"]
+        print(f"\nError: {error.get('message')}")
+
+
+def cmd_cloud_download(args):
+    """Download job output."""
+    import requests
+    from .cloud_config import get_api_url
+
+    api_url = args.api_url or get_api_url()
+    output_path = Path(args.output)
+
+    print(f"Downloading {args.file} from job {args.job_id}...")
+
+    response = requests.get(f"{api_url}/jobs/{args.job_id}/download?file={args.file}")
+
+    if response.status_code == 404:
+        print(f"Job or file not found: {args.job_id}")
+        sys.exit(1)
+    elif response.status_code == 400:
+        print(f"Job not completed yet. Check status with: essai cloud status {args.job_id}")
+        sys.exit(1)
+
+    response.raise_for_status()
+    download_data = response.json()
+
+    print(f"File size: {download_data['size_bytes'] / (1024 * 1024):.1f} MB")
+    print(f"Downloading to: {output_path}")
+
+    file_response = requests.get(download_data["download_url"], stream=True)
+    file_response.raise_for_status()
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(output_path, "wb") as f:
+        for chunk in file_response.iter_content(chunk_size=8192):
+            f.write(chunk)
+
+    print(f"Download complete: {output_path}")
+
+
+def cmd_cloud_jobs(args):
+    """List recent jobs."""
+    import requests
+    from .cloud_config import get_api_url
+
+    api_url = args.api_url or get_api_url()
+
+    params = {"limit": args.limit}
+    if args.status:
+        params["status"] = args.status
+
+    response = requests.get(f"{api_url}/jobs", params=params)
+    response.raise_for_status()
+    data = response.json()
+
+    jobs = data.get("jobs", [])
+    if not jobs:
+        print("No jobs found.")
+        return
+
+    print(f"{'Job ID':<30} {'Status':<12} {'Pipeline':<10} {'Created'}")
+    print("-" * 80)
+    for job in jobs:
+        created = job.get("created_at", "")[:19] if job.get("created_at") else ""
+        print(f"{job['job_id']:<30} {job.get('status', ''):<12} {job.get('pipeline', ''):<10} {created}")
+
+
 def cmd_localize(args):
     """
     Full localization pipeline: PDF -> Images -> Translate + Audio
@@ -477,6 +726,85 @@ One-command video:
         "--context", "-c", help="Additional context/instructions for script generation"
     )
 
+    # Cloud command group
+    cloud_parser = subparsers.add_parser(
+        "cloud",
+        help="Run commands via cloud API",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Cloud Commands:
+  essai cloud health                    # Check cloud API health
+  essai cloud video --pdf presentation.pdf  # Generate video in cloud
+  essai cloud status {job_id}           # Check job status
+  essai cloud download {job_id} -o out.mp4  # Download output
+  essai cloud jobs                      # List recent jobs
+
+Environment:
+  MONTAIGNE_API_URL    Cloud API URL (default: configured endpoint)
+        """,
+    )
+    cloud_parser.add_argument(
+        "--api-url", help="Cloud API URL (overrides MONTAIGNE_API_URL)"
+    )
+    cloud_subparsers = cloud_parser.add_subparsers(dest="cloud_command", help="Cloud commands")
+
+    # Cloud health command
+    cloud_subparsers.add_parser("health", help="Check cloud API health")
+
+    # Cloud video command
+    cloud_video_parser = cloud_subparsers.add_parser("video", help="Generate video via cloud")
+    cloud_video_parser.add_argument("--pdf", "-p", required=True, help="PDF file to process")
+    cloud_video_parser.add_argument("--output", "-o", help="Output video file")
+    cloud_video_parser.add_argument(
+        "--resolution", "-r", default="1920:1080", help="Video resolution (default: 1920:1080)"
+    )
+    cloud_video_parser.add_argument(
+        "--voice",
+        default="Orus",
+        choices=["Puck", "Charon", "Kore", "Fenrir", "Aoede", "Orus"],
+        help="TTS voice (default: Orus)",
+    )
+    cloud_video_parser.add_argument(
+        "--context", "-c", help="Additional context for script generation"
+    )
+    cloud_video_parser.add_argument(
+        "--wait/--no-wait",
+        dest="wait",
+        action="store_true",
+        default=True,
+        help="Wait for completion (default: wait)",
+    )
+    cloud_video_parser.add_argument(
+        "--no-wait",
+        dest="wait",
+        action="store_false",
+        help="Don't wait, return job ID immediately",
+    )
+
+    # Cloud status command
+    cloud_status_parser = cloud_subparsers.add_parser("status", help="Check job status")
+    cloud_status_parser.add_argument("job_id", help="Job ID to check")
+
+    # Cloud download command
+    cloud_download_parser = cloud_subparsers.add_parser("download", help="Download job output")
+    cloud_download_parser.add_argument("job_id", help="Job ID to download from")
+    cloud_download_parser.add_argument("--output", "-o", required=True, help="Output file path")
+    cloud_download_parser.add_argument(
+        "--file",
+        default="video",
+        choices=["video", "script", "audio", "images"],
+        help="File type to download (default: video)",
+    )
+
+    # Cloud jobs command
+    cloud_jobs_parser = cloud_subparsers.add_parser("jobs", help="List recent jobs")
+    cloud_jobs_parser.add_argument("--limit", type=int, default=20, help="Max jobs to list")
+    cloud_jobs_parser.add_argument(
+        "--status",
+        choices=["pending", "processing", "completed", "failed"],
+        help="Filter by status",
+    )
+
     args = parser.parse_args()
 
     if args.command is None:
@@ -495,7 +823,21 @@ One-command video:
         "ppt": cmd_ppt,
     }
 
-    commands[args.command](args)
+    # Handle cloud command specially (has subcommands)
+    if args.command == "cloud":
+        cloud_commands = {
+            "health": cmd_cloud_health,
+            "video": cmd_cloud_video,
+            "status": cmd_cloud_status,
+            "download": cmd_cloud_download,
+            "jobs": cmd_cloud_jobs,
+        }
+        if args.cloud_command is None:
+            cloud_parser.print_help()
+            return
+        cloud_commands[args.cloud_command](args)
+    else:
+        commands[args.command](args)
 
 
 if __name__ == "__main__":

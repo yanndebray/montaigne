@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "montaigne"
-version = "0.6.0"
+version = "0.7.0"
 description = "Media processing toolkit for presentation localization"
 readme = "README.md"
 license = {text = "MIT"}
@@ -32,6 +32,7 @@ dependencies = [
     "python-pptx>=0.6.21",
     "Pillow>=10.0.0",
     "tqdm>=4.65.0",
+    "requests>=2.28.0",
 ]
 
 [project.optional-dependencies]
@@ -44,8 +45,14 @@ dev = [
 webapp = [
     "streamlit>=1.30.0",
 ]
+cloud = [
+    "fastapi>=0.100.0",
+    "uvicorn[standard]>=0.20.0",
+    "google-cloud-storage>=2.10.0",
+    "python-multipart>=0.0.6",
+]
 all = [
-    "montaigne[dev,webapp]",
+    "montaigne[dev,webapp,cloud]",
 ]
 
 [project.scripts]
