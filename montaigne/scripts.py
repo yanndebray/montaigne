@@ -1,6 +1,7 @@
 """Script generation from PDF slides using Gemini AI."""
 
 import mimetypes
+import sys
 from pathlib import Path
 from typing import List, Optional
 
@@ -393,8 +394,25 @@ def generate_scripts(
     print(f"\n[Pass 2/2] Generating scripts for {total_slides} slide(s)...")
     slides_data = []
 
-    for i, image_path in enumerate(images, 1):
-        print(f"  Slide {i}/{total_slides}: {image_path.name}...")
+    # Use tqdm for progress bar if available in TTY environment
+    try:
+        from tqdm import tqdm
+
+        use_tqdm = sys.stderr.isatty()
+    except ImportError:
+        use_tqdm = False
+
+    # Create the base iterator
+    if use_tqdm:
+        image_iterator = tqdm(
+            enumerate(images, 1), total=len(images), desc="Generating scripts", unit="slide"
+        )
+    else:
+        image_iterator = enumerate(images, 1)
+
+    for i, image_path in image_iterator:
+        if not use_tqdm:
+            print(f"  Slide {i}/{total_slides}: {image_path.name}...")
 
         # Build sliding window context
         previous_summary = ""
@@ -418,9 +436,11 @@ def generate_scripts(
                 presentation_overview=overview,
             )
             slides_data.append(slide_data)
-            print(f"    [OK] {slide_data['title'][:40]}...")
+            if not use_tqdm:
+                print(f"    [OK] {slide_data['title'][:40]}...")
         except Exception as e:
-            print(f"    [ERROR] {e}")
+            if not use_tqdm:
+                print(f"    [ERROR] {e}")
             slides_data.append(
                 {
                     "number": i,

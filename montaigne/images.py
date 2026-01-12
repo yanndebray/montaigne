@@ -2,6 +2,7 @@
 
 import base64
 import mimetypes
+import sys
 from pathlib import Path
 from typing import List, Optional, Union
 
@@ -148,16 +149,31 @@ def translate_images(
     lang_code = target_lang[:2].lower()
     translated_images = []
 
-    for image_path in images:
-        print(f"  Translating: {image_path.name}...")
+    # Use tqdm for progress bar if available in TTY environment
+    try:
+        from tqdm import tqdm
+
+        use_tqdm = sys.stderr.isatty()
+    except ImportError:
+        use_tqdm = False
+
+    image_iterator = images
+    if use_tqdm:
+        image_iterator = tqdm(images, desc="Translating images", unit="image")
+
+    for image_path in image_iterator:
+        if not use_tqdm:
+            print(f"  Translating: {image_path.name}...")
 
         try:
             output_path = output_dir / f"{image_path.stem}_{lang_code}{image_path.suffix}"
             result = translate_image(image_path, output_path, target_lang, client=client)
             translated_images.append(result)
-            print(f"    Saved: {result.name}")
+            if not use_tqdm:
+                print(f"    Saved: {result.name}")
         except Exception as e:
-            print(f"    Error: {e}")
+            if not use_tqdm:
+                print(f"    Error: {e}")
 
     print(f"\nTranslated {len(translated_images)} images to {output_dir}/")
     return translated_images
