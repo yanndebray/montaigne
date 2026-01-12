@@ -167,6 +167,7 @@ def cmd_video(args):
             output_path=output_path,
             resolution=args.resolution,
             voice=args.voice,
+            context=args.context or "",
         )
         return
 
@@ -443,6 +444,9 @@ One-command video:
         default="Orus",
         choices=["Puck", "Charon", "Kore", "Fenrir", "Aoede", "Orus"],
         help="TTS voice for audio generation (default: Orus)",
+    )
+    video_parser.add_argument(
+        "--context", "-c", help="Additional context/instructions for script generation"
     )
 
     args = parser.parse_args()

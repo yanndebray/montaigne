@@ -191,6 +191,7 @@ def generate_video_from_pdf(
     output_path: Optional[Path] = None,
     resolution: str = "1920:1080",
     voice: str = "Orus",
+    context: str = "",
 ) -> Path:
     """
     Generate a complete video from a PDF presentation.
@@ -207,6 +208,7 @@ def generate_video_from_pdf(
         output_path: Path for output video
         resolution: Video resolution (default: 1920:1080)
         voice: TTS voice for audio generation
+        context: Additional context/instructions for script generation
 
     Returns:
         Path to the generated video
@@ -228,7 +230,7 @@ def generate_video_from_pdf(
     # Step 2: Generate or use existing script
     if script_path is None:
         print("\nStep 2: Generating voiceover script...")
-        script_path = generate_scripts(pdf_path)
+        script_path = generate_scripts(pdf_path, context=context)
     else:
         script_path = Path(script_path)
         print(f"\nStep 2: Using existing script: {script_path.name}")
