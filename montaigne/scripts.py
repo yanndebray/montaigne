@@ -402,11 +402,13 @@ def generate_scripts(
     except ImportError:
         use_tqdm = False
 
-    image_iterator = enumerate(images, 1)
+    # Create the base iterator
     if use_tqdm:
         image_iterator = tqdm(
             enumerate(images, 1), total=len(images), desc="Generating scripts", unit="slide"
         )
+    else:
+        image_iterator = enumerate(images, 1)
 
     for i, image_path in image_iterator:
         if not use_tqdm:
