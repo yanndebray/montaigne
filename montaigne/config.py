@@ -3,7 +3,6 @@
 import os
 import sys
 import subprocess
-from pathlib import Path
 
 REQUIRED_PACKAGES = ["google-genai", "python-dotenv", "pymupdf"]
 
@@ -11,9 +10,9 @@ REQUIRED_PACKAGES = ["google-genai", "python-dotenv", "pymupdf"]
 def check_dependencies() -> bool:
     """Check if required packages are installed."""
     try:
-        from dotenv import load_dotenv
-        from google import genai
-        import fitz  # PyMuPDF
+        from dotenv import load_dotenv  # noqa: F401
+        from google import genai  # noqa: F401
+        import fitz  # noqa: F401
 
         return True
     except ImportError:

@@ -1,7 +1,6 @@
 """Audio generation from voiceover scripts using Gemini TTS."""
 
 import base64
-import mimetypes
 import re
 import struct
 from pathlib import Path

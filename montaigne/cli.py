@@ -10,7 +10,7 @@ from . import __version__
 
 def cmd_setup(args):
     """Install dependencies and verify configuration."""
-    from .config import check_dependencies, install_dependencies, load_api_key
+    from .config import check_dependencies, install_dependencies
 
     print("=== Montaigne Setup ===\n")
 
@@ -197,7 +197,6 @@ def cmd_video(args):
 
     output_path = Path(args.output) if args.output else None
 
-    from .video import generate_video
 
     generate_video(images_dir, audio_dir, output_path, resolution=args.resolution)
 
@@ -284,7 +283,7 @@ def cmd_localize(args):
     # Step 1: Extract PDF if provided
     if args.pdf:
         pdf_path = Path(args.pdf)
-        print(f"Step 1: Extracting PDF pages...")
+        print("Step 1: Extracting PDF pages...")
         images_dir = output_base / "source_images"
         extracted = extract_pdf_pages(pdf_path, output_dir=images_dir, dpi=args.dpi)
         images_to_translate = extracted
@@ -316,7 +315,7 @@ def cmd_localize(args):
 
     # Step 3: Generate audio if script provided
     if args.script:
-        print(f"Step 3: Generating audio...")
+        print("Step 3: Generating audio...")
         script_path = Path(args.script)
         audio_dir = output_base / "audio"
         generate_audio(script_path, output_dir=audio_dir, voice=args.voice)
@@ -328,7 +327,7 @@ def cmd_localize(args):
             audio_dir = output_base / "audio"
             generate_audio(scripts[0], output_dir=audio_dir, voice=args.voice)
 
-    print(f"\n=== Localization Complete ===")
+    print("\n=== Localization Complete ===")
     print(f"Output: {output_base}/")
 
 

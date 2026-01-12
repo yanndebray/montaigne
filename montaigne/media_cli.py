@@ -25,8 +25,8 @@ from pathlib import Path
 def check_dependencies():
     """Check if required packages are installed."""
     try:
-        from dotenv import load_dotenv
-        from google import genai
+        from dotenv import load_dotenv  # noqa: F401
+        from google import genai  # noqa: F401
 
         return True
     except ImportError:

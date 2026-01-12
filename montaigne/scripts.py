@@ -1,6 +1,5 @@
 """Script generation from PDF slides using Gemini AI."""
 
-import base64
 import mimetypes
 from pathlib import Path
 from typing import List, Optional
@@ -606,7 +605,7 @@ def _format_scripts_markdown(
                 "### General Guidance",
                 production_notes.get("delivery", ""),
                 "",
-                f"### Estimated Reading Time",
+                "### Estimated Reading Time",
                 f"- **Word count:** ~{production_notes.get('word_count', 0):,} words",
                 f"- **Duration at presentation pace:** {production_notes.get('estimated_duration', 'Unknown')}",
                 "",
