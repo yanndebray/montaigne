@@ -173,15 +173,15 @@ def cmd_video(args):
         script_path = Path(args.script) if args.script else None
         output_path = Path(args.output) if args.output else None
 
-  generate_video_from_pdf(
-            pdf_path,
-            script_path=script_path,
-            output_path=output_path,
-            resolution=args.resolution,
-            voice=args.voice,
-            provider=args.provider,       # <--- Added this
-            context=args.context or "",   
-        )
+        generate_video_from_pdf(
+                    pdf_path,
+                    script_path=script_path,
+                    output_path=output_path,
+                    resolution=args.resolution,
+                    voice=args.voice,
+                    provider=args.provider,       # <--- Added this
+                    context=args.context or "",   
+                )
         return
 
     # Otherwise, combine existing images and audio
@@ -491,7 +491,7 @@ One-command video:
     video_parser.add_argument(
         "--resolution", "-r", default="1920:1080", help="Video resolution (default: 1920:1080)"
     )
-   video_parser.add_argument(
+    video_parser.add_argument(
         "--voice",
         default="Orus",
         help="Voice name: Gemini (Orus, Puck, Charon, Kore, Fenrir, Aoede, etc.) or ElevenLabs (adam, bob, william)",
