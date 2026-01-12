@@ -41,6 +41,12 @@ dev = [
     "black>=23.0.0",
     "ruff>=0.1.0",
 ]
+webapp = [
+    "streamlit>=1.30.0",
+]
+all = [
+    "montaigne[dev,webapp]",
+]
 
 [project.scripts]
 essai = "montaigne.cli:main"

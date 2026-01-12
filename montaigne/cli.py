@@ -252,6 +252,27 @@ def cmd_ppt(args):
     )
 
 
+def cmd_webapp(args):
+    """Launch the Streamlit web application."""
+    import subprocess
+
+    try:
+        import streamlit  # noqa: F401
+    except ImportError:
+        print("Streamlit not installed. Install with:")
+        print("  pip install montaigne[webapp]")
+        sys.exit(1)
+
+    print("=== Launching Montaigne Web App ===")
+    print("Opening in browser...\n")
+
+    # Get the path to app.py
+    app_path = Path(__file__).parent / "app.py"
+
+    # Launch streamlit
+    subprocess.run([sys.executable, "-m", "streamlit", "run", str(app_path)])
+
+
 def cmd_localize(args):
     """
     Full localization pipeline: PDF -> Images -> Translate + Audio
@@ -339,6 +360,7 @@ def main():
         epilog="""
 Examples:
   essai setup                           # Install dependencies
+  essai webapp                          # Launch web editor
   essai pdf presentation.pdf            # Extract PDF to images
   essai script --input presentation.pdf # Generate voiceover script from PDF
   essai audio --script voiceover.md     # Generate audio from script
@@ -347,6 +369,9 @@ Examples:
   essai ppt --input presentation.pdf    # Convert PDF to PowerPoint
   essai ppt --input slides/ --script voiceover.md  # Images to PPT with notes
   essai localize --pdf deck.pdf --script script.md --lang Spanish
+
+Web Editor:
+  essai webapp                          # Launch Streamlit slide editor
 
 Full pipeline (manual):
   essai pdf presentation.pdf            # Step 1: Extract slides
@@ -364,6 +389,9 @@ One-command video:
 
     # Setup command
     subparsers.add_parser("setup", help="Install dependencies and verify configuration")
+
+    # Webapp command
+    subparsers.add_parser("webapp", help="Launch the Streamlit web application")
 
     # PDF command
     pdf_parser = subparsers.add_parser("pdf", help="Extract PDF pages to images")
@@ -457,6 +485,7 @@ One-command video:
 
     commands = {
         "setup": cmd_setup,
+        "webapp": cmd_webapp,
         "pdf": cmd_pdf,
         "script": cmd_script,
         "audio": cmd_audio,
