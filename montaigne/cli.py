@@ -197,7 +197,6 @@ def cmd_video(args):
 
     output_path = Path(args.output) if args.output else None
 
-
     generate_video(images_dir, audio_dir, output_path, resolution=args.resolution)
 
 
