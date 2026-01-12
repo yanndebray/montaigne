@@ -269,49 +269,52 @@ def render_sidebar():
                 else:
                     st.error("Folder not found")
 
-        # Slide thumbnails
+        # Slide thumbnails in scrollable container
         if st.session_state.slides:
             st.divider()
             st.subheader(f"📊 {len(st.session_state.slides)} Slides")
 
-            for i, slide_path in enumerate(st.session_state.slides):
-                col1, col2 = st.columns([1, 3])
-
-                with col1:
-                    # Slide number badge
+            # Create scrollable container for slides
+            with st.container(height=500):
+                for i, slide_path in enumerate(st.session_state.slides):
                     is_selected = i == st.session_state.selected_slide
-                    badge_style = "background-color: #ff4b4b; color: white;" if is_selected else ""
-                    st.markdown(
-                        f'<span style="padding: 4px 8px; border-radius: 4px; {badge_style}">'
-                        f"{i + 1}</span>",
-                        unsafe_allow_html=True,
-                    )
 
-                with col2:
-                    # Get script title for this slide
-                    title = "Untitled"
-                    if i < len(st.session_state.scripts):
-                        title = st.session_state.scripts[i].get("title", f"Slide {i + 1}")
-                    st.caption(title[:20] + "..." if len(title) > 20 else title)
+                    # Slide header with number and title
+                    col1, col2 = st.columns([1, 3])
+                    with col1:
+                        badge_style = (
+                            "background-color: #ff4b4b; color: white;"
+                            if is_selected
+                            else "background-color: #444; color: white;"
+                        )
+                        st.markdown(
+                            f'<span style="padding: 4px 8px; border-radius: 4px; {badge_style}">'
+                            f"{i + 1}</span>",
+                            unsafe_allow_html=True,
+                        )
+                    with col2:
+                        title = "Untitled"
+                        if i < len(st.session_state.scripts):
+                            title = st.session_state.scripts[i].get("title", f"Slide {i + 1}")
+                        st.caption(title[:20] + "..." if len(title) > 20 else title)
 
-                # Thumbnail button
-                if st.button(
-                    "Select",
-                    key=f"slide_btn_{i}",
-                    use_container_width=True,
-                    type="primary" if is_selected else "secondary",
-                ):
-                    st.session_state.selected_slide = i
-                    st.rerun()
+                    # Thumbnail
+                    try:
+                        thumb = generate_thumbnail(slide_path, max_width=180)
+                        st.image(thumb, width="stretch")
+                    except Exception:
+                        st.image(str(slide_path), width="stretch")
 
-                # Show thumbnail
-                try:
-                    thumb = generate_thumbnail(slide_path, max_width=180)
-                    st.image(thumb, use_container_width=True)
-                except Exception:
-                    st.image(str(slide_path), use_container_width=True)
+                    # Select button
+                    if st.button(
+                        "Select" if not is_selected else "Selected",
+                        key=f"slide_btn_{i}",
+                        type="primary" if is_selected else "secondary",
+                    ):
+                        st.session_state.selected_slide = i
+                        st.rerun()
 
-                st.divider()
+                    st.divider()
 
 
 def render_main_panel():
@@ -372,7 +375,7 @@ def render_main_panel():
 
     with slide_col:
         st.subheader("🖼️ Slide Preview")
-        st.image(str(slide_path), use_container_width=True)
+        st.image(str(slide_path), width="stretch")
 
         # Slide info
         with st.expander("📋 Slide Info"):
@@ -445,17 +448,16 @@ def render_main_panel():
 
     with export_col2:
         # Export as markdown
-        if st.button("💾 Export Script", type="primary", use_container_width=True):
-            markdown = format_script_markdown(
-                st.session_state.scripts, st.session_state.presentation_title
-            )
-            st.download_button(
-                label="📥 Download Markdown",
-                data=markdown,
-                file_name=f"{st.session_state.presentation_title}_voiceover.md",
-                mime="text/markdown",
-                use_container_width=True,
-            )
+        markdown = format_script_markdown(
+            st.session_state.scripts, st.session_state.presentation_title
+        )
+        st.download_button(
+            label="💾 Export Script",
+            data=markdown,
+            file_name=f"{st.session_state.presentation_title}_voiceover.md",
+            mime="text/markdown",
+            type="primary",
+        )
 
     with export_col3:
         # Quick stats
