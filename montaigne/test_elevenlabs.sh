@@ -16,7 +16,7 @@ echo -e "\n[Test 2] Testing ElevenLabs Audio Generation (Adam)..."
 cat <<EOF > test_voiceover.md
 ## SLIDE 1: Test
 **[Duration: 5s]**
-This is a test of the ElevenLabs integration using the Adam voice.
+This is a test.
 EOF
 
 essai audio --script test_voiceover.md --provider elevenlabs --voice adam
