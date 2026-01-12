@@ -11,8 +11,6 @@ class TestProgressBars:
 
     def test_pdf_extraction_uses_tqdm_in_tty(self, temp_dir):
         """PDF extraction should use tqdm when in a TTY environment."""
-        from montaigne.pdf import extract_pdf_pages
-
         pdf_path = temp_dir / "test.pdf"
         pdf_path.touch()
 
@@ -27,8 +25,11 @@ class TestProgressBars:
         mock_tqdm_instance.__iter__ = Mock(return_value=iter(range(3)))
         mock_tqdm.return_value = mock_tqdm_instance
 
-        # Patch tqdm in the tqdm module itself
-        with patch.dict(sys.modules, {"fitz": mock_fitz, "tqdm": MagicMock(tqdm=mock_tqdm)}):
+        # Patch tqdm module correctly
+        mock_tqdm_module = MagicMock()
+        mock_tqdm_module.tqdm = mock_tqdm
+
+        with patch.dict(sys.modules, {"fitz": mock_fitz, "tqdm": mock_tqdm_module}):
             with patch("sys.stderr.isatty", return_value=True):
                 # Import the module after patches are in place
                 import importlib
@@ -39,10 +40,9 @@ class TestProgressBars:
 
         # Verify tqdm was called with correct parameters
         assert mock_tqdm.called
-        if mock_tqdm.called:
-            call_args = mock_tqdm.call_args
-            assert call_args[1]["desc"] == "Extracting pages"
-            assert call_args[1]["unit"] == "page"
+        call_args = mock_tqdm.call_args
+        assert call_args[1]["desc"] == "Extracting pages"
+        assert call_args[1]["unit"] == "page"
 
     def test_pdf_extraction_fallback_without_tqdm(self, temp_dir):
         """PDF extraction should work without tqdm."""
