@@ -8,7 +8,7 @@ from typing import List, Optional
 from .config import get_gemini_client
 
 IMAGE_EXTENSIONS = {".jpeg", ".jpg", ".png", ".gif", ".webp"}
-SCRIPT_MODEL = "gemini-2.5-flash"
+SCRIPT_MODEL = "gemini-3-pro-preview"
 
 
 def _get_arc_position(slide_num: int, total: int) -> str:

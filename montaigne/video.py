@@ -190,8 +190,9 @@ def generate_video_from_pdf(
     script_path: Optional[Path] = None,
     output_path: Optional[Path] = None,
     resolution: str = "1920:1080",
-    voice: Optional[str] = None,      # Changed to Optional
-    provider: str = "gemini",         # <--- Added this
+    voice: Optional[str] = None,
+    provider: str = "gemini",      # Keep your provider logic
+    context: str = "",             # Keep upstream context logic
 ) -> Path:
     """
     Generate a complete video from a PDF presentation.
@@ -203,6 +204,7 @@ def generate_video_from_pdf(
     pdf_path = Path(pdf_path)
     base_name = pdf_path.stem
 
+    # Use the provider in the print statement
     print(f"=== Generating Video from {pdf_path.name} ({provider.upper()}) ===\n")
 
     # Step 1: Extract PDF pages
@@ -210,19 +212,18 @@ def generate_video_from_pdf(
     images_dir = pdf_path.parent / f"{base_name}_images"
     extract_pdf_pages(pdf_path, output_dir=images_dir)
 
-    # Step 2: Generate or use existing script
+    # Step 2: Generate script (Pass the context here)
     if script_path is None:
         print("\nStep 2: Generating voiceover script...")
-        script_path = generate_scripts(pdf_path)
+        script_path = generate_scripts(pdf_path, context=context) # Use upstream context
     else:
         script_path = Path(script_path)
         print(f"\nStep 2: Using existing script: {script_path.name}")
 
-    # Step 3: Generate audio
+    # Step 3: Generate audio (Pass the provider here)
     print("\nStep 3: Generating audio...")
     audio_dir = script_path.parent / f"{script_path.stem}_audio"
-    # Added 'provider' here so it knows whether to use Gemini or ElevenLabs
-    generate_audio(script_path, output_dir=audio_dir, voice=voice, provider=provider)
+    generate_audio(script_path, output_dir=audio_dir, voice=voice, provider=provider) # Use your provider
 
     # Step 4: Generate video
     print("\nStep 4: Creating video...")

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "montaigne"
-version = "0.5.1"
+version = "0.6.0"
 description = "Media processing toolkit for presentation localization"
 readme = "README.md"
 license = {text = "MIT"}
@@ -41,6 +41,12 @@ dev = [
     "pytest-cov>=4.0.0",
     "black>=23.0.0",
     "ruff>=0.1.0",
+]
+webapp = [
+    "streamlit>=1.30.0",
+]
+all = [
+    "montaigne[dev,webapp]",
 ]
 
 [project.scripts]
