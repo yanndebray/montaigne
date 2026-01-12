@@ -1,5 +1,6 @@
 """PDF to images extraction using PyMuPDF."""
 
+import sys
 from pathlib import Path
 from typing import List, Optional
 
@@ -40,7 +41,19 @@ def extract_pdf_pages(
     zoom = dpi / 72
     matrix = fitz.Matrix(zoom, zoom)
 
-    for page_num in range(len(doc)):
+    # Use tqdm for progress bar if available in TTY environment
+    try:
+        from tqdm import tqdm
+
+        use_tqdm = sys.stderr.isatty()
+    except ImportError:
+        use_tqdm = False
+
+    page_iterator = range(len(doc))
+    if use_tqdm:
+        page_iterator = tqdm(page_iterator, desc="Extracting pages", unit="page")
+
+    for page_num in page_iterator:
         page = doc[page_num]
 
         # Render page to pixmap
@@ -57,7 +70,8 @@ def extract_pdf_pages(
             pix.save(output_path)
 
         extracted_images.append(output_path)
-        print(f"  Extracted: page_{page_num + 1:03d}{ext}")
+        if not use_tqdm:
+            print(f"  Extracted: page_{page_num + 1:03d}{ext}")
 
     doc.close()
 

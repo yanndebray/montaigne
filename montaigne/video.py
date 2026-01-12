@@ -1,6 +1,7 @@
 """Video generation from slides and audio using ffmpeg."""
 
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 from typing import Optional
@@ -109,13 +110,26 @@ def generate_video(
         temp_path = Path(temp_dir)
         clips = []
 
+        # Use tqdm for progress bar if available in TTY environment
+        try:
+            from tqdm import tqdm
+
+            use_tqdm = sys.stderr.isatty()
+        except ImportError:
+            use_tqdm = False
+
+        slide_iterator = range(num_slides)
+        if use_tqdm:
+            slide_iterator = tqdm(slide_iterator, desc="Creating clips", unit="clip")
+
         # Create individual clips
-        for i in range(num_slides):
+        for i in slide_iterator:
             image = images[i]
             audio = audio_files[i]
             clip_path = temp_path / f"clip_{i+1:03d}.mp4"
 
-            print(f"  Creating clip {i+1}/{num_slides}: {image.name} + {audio.name}")
+            if not use_tqdm:
+                print(f"  Creating clip {i+1}/{num_slides}: {image.name} + {audio.name}")
             create_slide_clip(image, audio, clip_path, resolution)
             clips.append(clip_path)
 

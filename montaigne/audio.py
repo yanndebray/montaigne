@@ -3,6 +3,7 @@
 import base64
 import re
 import struct
+import sys
 from pathlib import Path
 from typing import List, Dict, Optional
 
@@ -237,16 +238,31 @@ def generate_audio(
     client = get_gemini_client()
     generated_files = []
 
-    for slide in slides:
-        print(f"  Generating audio for Slide {slide['number']}: {slide['title'][:40]}...")
+    # Use tqdm for progress bar if available in TTY environment
+    try:
+        from tqdm import tqdm
+
+        use_tqdm = sys.stderr.isatty()
+    except ImportError:
+        use_tqdm = False
+
+    slide_iterator = slides
+    if use_tqdm:
+        slide_iterator = tqdm(slides, desc="Generating audio", unit="slide")
+
+    for slide in slide_iterator:
+        if not use_tqdm:
+            print(f"  Generating audio for Slide {slide['number']}: {slide['title'][:40]}...")
 
         try:
             output_path = output_dir / f"slide_{slide['number']:02d}.wav"
             generate_slide_audio(slide["text"], output_path, voice=voice, client=client)
             generated_files.append(output_path)
-            print(f"    Saved: {output_path.name}")
+            if not use_tqdm:
+                print(f"    Saved: {output_path.name}")
         except Exception as e:
-            print(f"    Error: {e}")
+            if not use_tqdm:
+                print(f"    Error: {e}")
 
     print(f"\nGenerated {len(generated_files)} audio files in {output_dir}/")
     return generated_files
