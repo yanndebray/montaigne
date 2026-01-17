@@ -673,11 +673,11 @@
         <section class="hero">
             <div class="hero-content">
                 <div class="hero-badge">
-                    <span>v0.5.1</span> · MIT Licensed
+                    <span>v0.9.1</span> · MIT Licensed
                 </div>
                 <h1>Localize. Narrate.<br><em>Present.</em></h1>
                 <p class="hero-subtitle">
-                    A powerful Python toolkit for presentation localization. Extract slides, translate visuals, generate voiceovers, and create videos—all powered by Google Gemini AI.
+                    A powerful Python toolkit for presentation localization. Extract slides, translate visuals, generate voiceovers, and create videos—powered by Google Gemini AI and ElevenLabs.
                 </p>
                 <div class="hero-actions">
                     <a href="#usage" class="btn btn-primary">
@@ -764,7 +764,7 @@
                         <line x1="8" y1="23" x2="16" y2="23"/>
                     </svg>
                     <h3>Voice Synthesis</h3>
-                    <p>Generate natural voiceover audio from scripts. Six distinct voices available: Puck, Charon, Kore, Fenrir, Aoede, and Orus.</p>
+                    <p>Generate natural voiceover audio from scripts. Choose from two providers: <strong>Gemini TTS</strong> (Puck, Charon, Kore, Fenrir, Aoede, Orus) or <strong>ElevenLabs</strong> (custom voices with cloning support).</p>
                 </div>
 
                 <div class="feature-card animate-on-scroll">
@@ -803,6 +803,23 @@
                     <h3>Full Pipeline</h3>
                     <p>One-command localization workflow. Extract, translate, and generate audio in a single step with <code>essai localize</code>.</p>
                 </div>
+
+                <div class="feature-card animate-on-scroll">
+                    <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>
+                    </svg>
+                    <h3>Cloud Deployment</h3>
+                    <p>Offload video generation to Google Cloud Run. Upload PDFs, process in the cloud, and download results with secure signed URLs.</p>
+                </div>
+
+                <div class="feature-card animate-on-scroll">
+                    <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                    </svg>
+                    <h3>Model Configuration</h3>
+                    <p>Customize Gemini models for each operation. Use <code>--model</code> flags to switch between flash and pro models based on your needs.</p>
+                </div>
             </div>
         </section>
 
@@ -831,8 +848,9 @@
 <pre><span class="code-comment"># Install the package</span>
 <span class="code-keyword">$</span> pip install montaigne
 
-<span class="code-comment"># Create .env file with your Gemini API key</span>
-<span class="code-keyword">$</span> echo <span class="code-string">"GEMINI_API_KEY=your-api-key"</span> > .env
+<span class="code-comment"># Create .env file with your API keys</span>
+<span class="code-keyword">$</span> echo <span class="code-string">"GEMINI_API_KEY=your-gemini-key"</span> > .env
+<span class="code-keyword">$</span> echo <span class="code-string">"ELEVENLABS_API_KEY=your-elevenlabs-key"</span> >> .env  <span class="code-comment"># Optional</span>
 
 <span class="code-comment"># Verify everything is set up correctly</span>
 <span class="code-keyword">$</span> essai setup
@@ -896,27 +914,39 @@ main benefits: automation, insights, and scalability.
                 </div>
                 <div class="api-item animate-on-scroll">
                     <span class="api-name">essai script</span>
-                    <span class="api-desc">Generate voiceover scripts with two-pass AI analysis. Extracts topic, audience, tone, then generates scripts with smooth transitions and production notes. Options: <code>--input</code>, <code>--output</code>, <code>--context</code> (use to control script length, tone, and target audience).</span>
+                    <span class="api-desc">Generate voiceover scripts with two-pass AI analysis. Options: <code>--input</code>, <code>--output</code>, <code>--context</code> (control length, tone, audience), <code>--model</code> (default: gemini-3-pro-preview).</span>
                 </div>
                 <div class="api-item animate-on-scroll">
                     <span class="api-name">essai audio</span>
-                    <span class="api-desc">Generate voiceover audio from scripts. Options: <code>--script</code> for input file, <code>--voice</code> for voice selection (Puck, Charon, Kore, Fenrir, Aoede, Orus).</span>
+                    <span class="api-desc">Generate voiceover audio from scripts. Options: <code>--script</code>, <code>--voice</code>, <code>--provider</code> (gemini or elevenlabs), <code>--model</code> (default: gemini-2.5-pro-preview-tts), <code>--list-voices</code>.</span>
                 </div>
                 <div class="api-item animate-on-scroll">
                     <span class="api-name">essai images</span>
-                    <span class="api-desc">Translate text in images to target language. Options: <code>--input</code> for image or folder, <code>--lang</code> for target language (default: French).</span>
+                    <span class="api-desc">Translate text in images to target language. Options: <code>--input</code>, <code>--lang</code> (default: French), <code>--model</code> (default: gemini-3-pro-image-preview).</span>
                 </div>
                 <div class="api-item animate-on-scroll">
                     <span class="api-name">essai localize</span>
-                    <span class="api-desc">Full localization pipeline: extract PDF, translate images, generate audio. Options: <code>--pdf</code>, <code>--script</code>, <code>--lang</code>.</span>
+                    <span class="api-desc">Full localization pipeline: extract PDF, translate images, generate audio. Options: <code>--pdf</code>, <code>--script</code>, <code>--lang</code>, <code>--provider</code>.</span>
                 </div>
                 <div class="api-item animate-on-scroll">
                     <span class="api-name">essai video</span>
-                    <span class="api-desc">Generate video from slides and audio. Combines translated images with voiceover into a polished presentation video.</span>
+                    <span class="api-desc">Generate video from slides and audio. Options: <code>--pdf</code>, <code>--context</code>, <code>--provider</code>, <code>--script-model</code>, <code>--audio-model</code>.</span>
                 </div>
                 <div class="api-item animate-on-scroll">
                     <span class="api-name">essai ppt</span>
                     <span class="api-desc">Create PowerPoint from PDF or images. Options: <code>--input</code> for PDF or folder, <code>--script</code> to add speaker notes, <code>--keep-images</code> to retain extracted images.</span>
+                </div>
+                <div class="api-item animate-on-scroll">
+                    <span class="api-name">essai models</span>
+                    <span class="api-desc">List available Gemini models. Options: <code>--filter</code> / <code>-f</code> to filter by keyword (e.g., <code>-f tts</code> for TTS models, <code>-f flash</code> for flash models).</span>
+                </div>
+                <div class="api-item animate-on-scroll">
+                    <span class="api-name">essai webapp</span>
+                    <span class="api-desc">Launch interactive Streamlit web app for editing voiceover scripts. Requires <code>pip install montaigne[webapp]</code>.</span>
+                </div>
+                <div class="api-item animate-on-scroll">
+                    <span class="api-name">essai cloud</span>
+                    <span class="api-desc">Cloud deployment commands. Subcommands: <code>health</code> (check API status), <code>video</code> (generate video in cloud), <code>status</code> (check job), <code>download</code> (get output), <code>jobs</code> (list jobs). Requires <code>pip install montaigne[cloud]</code>.</span>
                 </div>
             </div>
         </section>
@@ -953,14 +983,25 @@ main benefits: automation, insights, and scalability.
 <span class="code-keyword">$</span> essai script --input presentation.pdf --context <span class="code-string">"AI workshop"</span>
 <span class="code-string">Generated script saved to ./voiceover.md</span>
 
-<span class="code-comment"># Generate audio with a specific voice</span>
+<span class="code-comment"># Generate audio with Gemini TTS</span>
 <span class="code-keyword">$</span> essai audio --script voiceover.md --voice Kore
 <span class="code-string">Generated 15 audio files in ./audio/</span>
 
-<span class="code-comment"># Create PowerPoint with speaker notes</span>
-<span class="code-keyword">$</span> essai ppt --input presentation.pdf --script voiceover.md
-<span class="code-string">Extracting pages from PDF...</span>
-<span class="code-string">Created: presentation.pptx</span>
+<span class="code-comment"># Or use ElevenLabs for premium voices</span>
+<span class="code-keyword">$</span> essai audio --script voiceover.md --provider elevenlabs --voice adam
+<span class="code-string">Generated 15 audio files in ./audio/</span>
+
+<span class="code-comment"># Generate video with custom models</span>
+<span class="code-keyword">$</span> essai video --pdf presentation.pdf --audio-model gemini-2.5-flash-preview-tts
+<span class="code-string">Step 1: Extracting PDF pages...</span>
+<span class="code-string">Step 2: Generating voiceover script...</span>
+<span class="code-string">Step 3: Generating audio...</span>
+<span class="code-string">Step 4: Creating video...</span>
+
+<span class="code-comment"># List available TTS models</span>
+<span class="code-keyword">$</span> essai models -f tts
+<span class="code-string">gemini-2.5-flash-preview-tts</span>
+<span class="code-string">gemini-2.5-pro-preview-tts</span>
 
 <span class="code-comment"># Full localization in one command</span>
 <span class="code-keyword">$</span> essai localize --pdf presentation.pdf --lang French
@@ -980,7 +1021,7 @@ main benefits: automation, insights, and scalability.
                 <a href="https://aistudio.google.com/" target="_blank">Google AI Studio</a>
             </div>
             <p class="footer-copy">
-                Powered by Google Gemini AI · Built for global presentations.
+                Powered by Google Gemini AI & ElevenLabs · Built for global presentations.
             </p>
         </div>
     </footer>
