@@ -13,6 +13,13 @@ from .elevenlabs_tts import generate_slide_audio_elevenlabs, ELEVENLABS_VOICES, 
 
 logger = get_logger(__name__)
 
+
+class GeminiQuotaError(Exception):
+    """Raised when Gemini API quota is exhausted."""
+
+    pass
+
+
 # Available Gemini TTS voices
 VOICES = ["Puck", "Charon", "Kore", "Fenrir", "Aoede", "Orus"]
 DEFAULT_VOICE = "Orus"
@@ -161,7 +168,11 @@ def _convert_to_wav(audio_data: bytes, mime_type: str) -> bytes:
 def generate_slide_audio(
     text: str, output_path: Path, voice: str = DEFAULT_VOICE, client=None
 ) -> Path:
-    """Generate audio for a single text using Gemini TTS (.wav)."""
+    """Generate audio for a single text using Gemini TTS (.wav).
+
+    Raises:
+        GeminiQuotaError: When API quota is exhausted (daily limit reached)
+    """
     from google.genai import types
 
     if client is None:
@@ -178,17 +189,37 @@ def generate_slide_audio(
         ),
     )
 
-    for chunk in client.models.generate_content_stream(model=TTS_MODEL, contents=contents, config=config):
-        if chunk.candidates and chunk.candidates[0].content and chunk.candidates[0].content.parts:
-            part = chunk.candidates[0].content.parts[0]
-            if part.inline_data and part.inline_data.data:
-                # Add WAV header to the Gemini PCM data
-                data_buffer = _convert_to_wav(part.inline_data.data, part.inline_data.mime_type)
-                with open(output_path, "wb") as f:
-                    f.write(data_buffer)
-                return output_path
+    try:
+        for chunk in client.models.generate_content_stream(
+            model=TTS_MODEL, contents=contents, config=config
+        ):
+            if (
+                chunk.candidates
+                and chunk.candidates[0].content
+                and chunk.candidates[0].content.parts
+            ):
+                part = chunk.candidates[0].content.parts[0]
+                if part.inline_data and part.inline_data.data:
+                    # Add WAV header to the Gemini PCM data
+                    data_buffer = _convert_to_wav(part.inline_data.data, part.inline_data.mime_type)
+                    with open(output_path, "wb") as f:
+                        f.write(data_buffer)
+                    return output_path
+    except Exception as e:
+        error_str = str(e)
+        # Check for quota/rate limit errors
+        if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str or "quota" in error_str.lower():
+            raise GeminiQuotaError(
+                "Gemini API daily quota exceeded. Your free tier limit has been reached.\n"
+                "Options:\n"
+                "  - Wait until tomorrow for quota reset\n"
+                "  - Upgrade your plan at https://ai.google.dev/pricing\n"
+                "  - Use --provider elevenlabs as an alternative"
+            ) from e
+        raise
 
     raise RuntimeError("No audio data received from Gemini API")
+
 
 def list_voices(provider: str = "gemini"):
     """List available voices for the selected provider."""
@@ -202,11 +233,12 @@ def list_voices(provider: str = "gemini"):
         for name in VOICES:
             logger.info(" - %s", name)
 
+
 def generate_audio(
-    script_path: Path, 
-    output_dir: Optional[Path] = None, 
+    script_path: Path,
+    output_dir: Optional[Path] = None,
     voice: Optional[str] = None,
-    provider: str = "gemini"
+    provider: str = "gemini",
 ) -> List[Path]:
     """Main entry point to generate audio for a full script."""
     script_path = Path(script_path)
@@ -221,14 +253,15 @@ def generate_audio(
 
     is_eleven = provider.lower() == "elevenlabs"
     client = get_elevenlabs_client() if is_eleven else get_gemini_client()
-    
+
     # Default voice logic
     active_voice = voice or ("george" if is_eleven else DEFAULT_VOICE)
-    extension = "wav" # Always wav per Acceptance Criteria
+    extension = "wav"  # Always wav per Acceptance Criteria
     generated_files = []
 
     try:
         from tqdm import tqdm
+
         use_tqdm = sys.stderr.isatty()
     except ImportError:
         use_tqdm = False
@@ -241,24 +274,31 @@ def generate_audio(
 
             if is_eleven:
                 generate_slide_audio_elevenlabs(
-                    slide["text"],
-                    output_path,
-                    voice=active_voice,
-                    client=client
+                    slide["text"], output_path, voice=active_voice, client=client
                 )
             else:
-                generate_slide_audio(
-                    slide["text"],
-                    output_path,
-                    voice=active_voice,
-                    client=client
-                )
+                generate_slide_audio(slide["text"], output_path, voice=active_voice, client=client)
             generated_files.append(output_path)
         except ElevenLabsQuotaError as e:
             # Fail fast on quota errors - no point continuing
-            logger.error("ElevenLabs quota exceeded at slide %d", slide['number'])
+            logger.error("ElevenLabs quota exceeded at slide %d", slide["number"])
             logger.error(str(e))
-            logger.error("Generated %d of %d audio files before running out of credits", len(generated_files), len(slides))
+            logger.error(
+                "Generated %d of %d audio files before running out of credits",
+                len(generated_files),
+                len(slides),
+            )
+            raise
+        except GeminiQuotaError as e:
+            # Fail fast on quota errors - no point continuing
+            logger.error("Gemini quota exceeded at slide %d", slide["number"])
+            logger.error(str(e))
+            if generated_files:
+                logger.error(
+                    "Generated %d of %d audio files before hitting quota limit",
+                    len(generated_files),
+                    len(slides),
+                )
             raise
         except Exception as e:
             msg = f"Error on Slide {slide['number']}: {e}"

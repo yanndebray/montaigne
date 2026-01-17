@@ -14,7 +14,7 @@ __version__ = "0.8.7"
 from .pdf import extract_pdf_pages
 from .scripts import generate_scripts, generate_slide_script
 from .images import translate_image, translate_images
-from .audio import generate_audio, parse_voiceover_script
+from .audio import generate_audio, parse_voiceover_script, GeminiQuotaError
 from .video import generate_video, generate_video_from_pdf
 from .ppt import create_pptx, pdf_to_pptx, folder_to_pptx
 
@@ -26,6 +26,7 @@ __all__ = [
     "translate_images",
     "generate_audio",
     "parse_voiceover_script",
+    "GeminiQuotaError",
     "generate_video",
     "generate_video_from_pdf",
     "create_pptx",
