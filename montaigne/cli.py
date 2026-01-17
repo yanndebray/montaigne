@@ -220,6 +220,8 @@ def cmd_video(args):
             voice=args.voice,
             provider=args.provider,
             context=resolve_context(args.context),
+            script_model=args.script_model,
+            audio_model=args.audio_model,
         )
         return
 
@@ -816,13 +818,22 @@ One-command video:
         default="Orus",
         help="Voice name: Gemini (Orus, Puck, etc.) or ElevenLabs (preset: adam, bob, etc.; or any voice ID)",
     )
-    # Add both here:
     video_parser.add_argument("--provider", choices=["gemini", "elevenlabs"], default="gemini")
     video_parser.add_argument(
         "--context",
         "-c",
         action="append",
         help="Context string or path to .txt/.md file (can be specified multiple times)",
+    )
+    video_parser.add_argument(
+        "--script-model",
+        default=None,
+        help="Gemini model for script generation (default: gemini-3-pro-preview)",
+    )
+    video_parser.add_argument(
+        "--audio-model",
+        default=None,
+        help="Gemini model for TTS (default: gemini-2.5-pro-preview-tts)",
     )
 
     # Cloud command group

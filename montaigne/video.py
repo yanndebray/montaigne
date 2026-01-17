@@ -166,7 +166,9 @@ def generate_video(
             clip_path = temp_path / f"clip_{i+1:03d}.mp4"
 
             if not use_tqdm:
-                logger.info("Creating clip %d/%d: %s + %s", i+1, num_slides, image.name, audio.name)
+                logger.info(
+                    "Creating clip %d/%d: %s + %s", i + 1, num_slides, image.name, audio.name
+                )
             create_slide_clip(image, audio, clip_path, resolution)
             clips.append(clip_path)
 
@@ -228,11 +230,24 @@ def generate_video_from_pdf(
     output_path: Optional[Path] = None,
     resolution: str = "1920:1080",
     voice: Optional[str] = None,
-    provider: str = "gemini",      # Keep your provider logic
-    context: str = "",             # Keep upstream context logic
+    provider: str = "gemini",
+    context: str = "",
+    script_model: Optional[str] = None,
+    audio_model: Optional[str] = None,
 ) -> Path:
     """
     Generate a complete video from a PDF presentation.
+
+    Args:
+        pdf_path: Path to PDF file
+        script_path: Optional existing voiceover script
+        output_path: Output video path
+        resolution: Video resolution (default: 1920:1080)
+        voice: TTS voice name
+        provider: TTS provider (gemini or elevenlabs)
+        context: Context for script generation
+        script_model: Model for script generation (default: gemini-3-pro-preview)
+        audio_model: Model for TTS audio (default: gemini-2.5-pro-preview-tts)
     """
     from .pdf import extract_pdf_pages
     from .scripts import generate_scripts
@@ -252,7 +267,7 @@ def generate_video_from_pdf(
     # Step 2: Generate script (Pass the context here)
     if script_path is None:
         logger.info("Step 2: Generating voiceover script...")
-        script_path = generate_scripts(pdf_path, context=context) # Use upstream context
+        script_path = generate_scripts(pdf_path, context=context, model=script_model)
     else:
         script_path = Path(script_path)
         logger.info("Step 2: Using existing script: %s", script_path.name)
@@ -260,7 +275,9 @@ def generate_video_from_pdf(
     # Step 3: Generate audio (Pass the provider here)
     logger.info("Step 3: Generating audio...")
     audio_dir = script_path.parent / f"{script_path.stem}_audio"
-    generate_audio(script_path, output_dir=audio_dir, voice=voice, provider=provider) # Use your provider
+    generate_audio(
+        script_path, output_dir=audio_dir, voice=voice, provider=provider, model=audio_model
+    )
 
     # Step 4: Generate video
     logger.info("Step 4: Creating video...")
