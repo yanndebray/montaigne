@@ -68,10 +68,15 @@ def parse_voiceover_script(script_path: Path) -> List[Dict]:
                 break
             if capture and line.strip():
                 stripped = line.strip()
+                # Skip markdown headers and metadata lines
                 if (
                     stripped
                     and not stripped.startswith("**")
                     and not stripped.startswith("*Duration")
+                    and not stripped.startswith("###")
+                    and not stripped.lower().startswith("voice-over")
+                    and not stripped.lower().startswith("voiceover")
+                    and not stripped.lower() == "voice over:"
                 ):
                     voiceover_lines.append(stripped)
 
