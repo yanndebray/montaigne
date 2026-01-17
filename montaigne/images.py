@@ -8,8 +8,22 @@ from typing import List, Optional, Union
 
 from .config import get_gemini_client
 from .logging import get_logger
+from .audio import GeminiQuotaError
 
 logger = get_logger(__name__)
+
+
+def _check_quota_error(e: Exception) -> None:
+    """Check if exception is a quota error and raise GeminiQuotaError if so."""
+    error_str = str(e)
+    if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str or "quota" in error_str.lower():
+        raise GeminiQuotaError(
+            "Gemini API daily quota exceeded. Your free tier limit has been reached.\n"
+            "Options:\n"
+            "  - Wait until tomorrow for quota reset\n"
+            "  - Upgrade your plan at https://ai.google.dev/pricing"
+        ) from e
+
 
 IMAGE_EXTENSIONS = {".jpeg", ".jpg", ".png", ".gif", ".webp"}
 IMAGE_MODEL = "gemini-3-pro-image-preview"
@@ -90,27 +104,31 @@ Output the modified image, not text."""
     config = types.GenerateContentConfig(response_modalities=["IMAGE", "TEXT"])
 
     # Generate translated image
-    for chunk in client.models.generate_content_stream(
-        model=IMAGE_MODEL,
-        contents=contents,
-        config=config,
-    ):
-        if (
-            chunk.candidates is None
-            or chunk.candidates[0].content is None
-            or chunk.candidates[0].content.parts is None
+    try:
+        for chunk in client.models.generate_content_stream(
+            model=IMAGE_MODEL,
+            contents=contents,
+            config=config,
         ):
-            continue
+            if (
+                chunk.candidates is None
+                or chunk.candidates[0].content is None
+                or chunk.candidates[0].content.parts is None
+            ):
+                continue
 
-        part = chunk.candidates[0].content.parts[0]
-        if part.inline_data and part.inline_data.data:
-            # Determine output format from response
-            resp_ext = mimetypes.guess_extension(part.inline_data.mime_type) or ".png"
-            if output_path.suffix != resp_ext:
-                output_path = output_path.with_suffix(resp_ext)
+            part = chunk.candidates[0].content.parts[0]
+            if part.inline_data and part.inline_data.data:
+                # Determine output format from response
+                resp_ext = mimetypes.guess_extension(part.inline_data.mime_type) or ".png"
+                if output_path.suffix != resp_ext:
+                    output_path = output_path.with_suffix(resp_ext)
 
-            _save_image(output_path, part.inline_data.data)
-            return output_path
+                _save_image(output_path, part.inline_data.data)
+                return output_path
+    except Exception as e:
+        _check_quota_error(e)
+        raise
 
     raise RuntimeError("No image data received from API")
 
@@ -164,7 +182,7 @@ def translate_images(
     if use_tqdm:
         image_iterator = tqdm(images, desc="Translating images", unit="image")
 
-    for image_path in image_iterator:
+    for idx, image_path in enumerate(image_iterator, 1):
         if not use_tqdm:
             logger.info("Translating: %s...", image_path.name)
 
@@ -174,6 +192,16 @@ def translate_images(
             translated_images.append(result)
             if not use_tqdm:
                 logger.info("  Saved: %s", result.name)
+        except GeminiQuotaError:
+            # Fail fast on quota errors - no point continuing
+            logger.error("Gemini quota exceeded at image %d (%s)", idx, image_path.name)
+            if translated_images:
+                logger.error(
+                    "Translated %d of %d images before hitting quota limit",
+                    len(translated_images),
+                    len(images),
+                )
+            raise
         except Exception as e:
             if not use_tqdm:
                 logger.error("  Error: %s", e)
