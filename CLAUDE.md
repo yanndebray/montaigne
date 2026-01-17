@@ -38,6 +38,11 @@ essai images --input slides/ --lang French
 essai ppt --input presentation.pdf --script voiceover.md
 essai video --pdf presentation.pdf
 essai localize --pdf presentation.pdf --lang French
+
+# Using custom models (override defaults)
+essai script --input presentation.pdf --model gemini-2.5-flash
+essai audio --script voiceover.md --model gemini-2.5-flash-preview-tts
+essai images --input slides/ --model gemini-2.0-flash-exp
 ```
 
 ## Architecture
@@ -74,12 +79,24 @@ montaigne/
 ### External Dependencies
 
 - **Google Gemini API**: Required for all AI operations (scripts, audio, image translation)
-  - Script generation: `gemini-2.5-flash`
-  - TTS: `gemini-2.5-pro-preview-tts`
-  - Image translation: `gemini-3-pro-image-preview`
+  - Script generation: `gemini-3-pro-preview` (default, configurable via `--model`)
+  - TTS: `gemini-2.5-pro-preview-tts` (default, configurable via `--model`)
+  - Image translation: `gemini-3-pro-image-preview` (default, configurable via `--model`)
 - **ffmpeg**: Required only for video generation (`essai video`)
 - **PyMuPDF (fitz)**: PDF extraction
 - **python-pptx + Pillow**: PowerPoint generation
+
+### Model Configuration
+
+Each AI command supports a `--model` / `-m` flag to override the default Gemini model:
+
+| Command | Default Model | Flag |
+|---------|---------------|------|
+| `essai script` | `gemini-3-pro-preview` | `--model` / `-m` |
+| `essai audio` | `gemini-2.5-pro-preview-tts` | `--model` / `-m` |
+| `essai images` | `gemini-3-pro-image-preview` | `--model` / `-m` |
+
+Example: `essai script --input slides.pdf --model gemini-2.5-flash`
 
 ### Voiceover Script Format
 

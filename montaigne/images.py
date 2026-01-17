@@ -26,7 +26,7 @@ def _check_quota_error(e: Exception) -> None:
 
 
 IMAGE_EXTENSIONS = {".jpeg", ".jpg", ".png", ".gif", ".webp"}
-IMAGE_MODEL = "gemini-3-pro-image-preview"
+DEFAULT_IMAGE_MODEL = "gemini-3-pro-image-preview"
 
 
 def _save_image(file_path: Path, data: Union[str, bytes]):
@@ -46,7 +46,11 @@ def _save_image(file_path: Path, data: Union[str, bytes]):
 
 
 def translate_image(
-    image_path: Path, output_path: Optional[Path] = None, target_lang: str = "French", client=None
+    image_path: Path,
+    output_path: Optional[Path] = None,
+    target_lang: str = "French",
+    client=None,
+    model: Optional[str] = None,
 ) -> Path:
     """
     Translate text in an image to target language using Gemini.
@@ -56,12 +60,14 @@ def translate_image(
         output_path: Path for translated image (default: {stem}_{lang_code}.{ext})
         target_lang: Target language (default: French)
         client: Optional pre-configured Gemini client
+        model: Optional model name (default: gemini-3-pro-image-preview)
 
     Returns:
         Path to translated image
     """
     from google.genai import types
 
+    model = model or DEFAULT_IMAGE_MODEL
     image_path = Path(image_path)
     if not image_path.exists():
         raise FileNotFoundError(f"Image not found: {image_path}")
@@ -106,7 +112,7 @@ Output the modified image, not text."""
     # Generate translated image
     try:
         for chunk in client.models.generate_content_stream(
-            model=IMAGE_MODEL,
+            model=model,
             contents=contents,
             config=config,
         ):
@@ -134,7 +140,10 @@ Output the modified image, not text."""
 
 
 def translate_images(
-    input_path: Path, output_dir: Optional[Path] = None, target_lang: str = "French"
+    input_path: Path,
+    output_dir: Optional[Path] = None,
+    target_lang: str = "French",
+    model: Optional[str] = None,
 ) -> List[Path]:
     """
     Translate images from input path (file or directory).
@@ -143,10 +152,12 @@ def translate_images(
         input_path: Single image file or directory containing images
         output_dir: Directory for output (default: {input}_translated/)
         target_lang: Target language
+        model: Optional model name (default: gemini-3-pro-image-preview)
 
     Returns:
         List of paths to translated images
     """
+    model = model or DEFAULT_IMAGE_MODEL
     input_path = Path(input_path)
 
     # Determine input images
@@ -165,6 +176,7 @@ def translate_images(
     output_dir.mkdir(parents=True, exist_ok=True)
 
     logger.info("Found %d image(s) to translate", len(images))
+    logger.info("Using model: %s", model)
 
     client = get_gemini_client()
     lang_code = target_lang[:2].lower()
@@ -188,7 +200,9 @@ def translate_images(
 
         try:
             output_path = output_dir / f"{image_path.stem}_{lang_code}{image_path.suffix}"
-            result = translate_image(image_path, output_path, target_lang, client=client)
+            result = translate_image(
+                image_path, output_path, target_lang, client=client, model=model
+            )
             translated_images.append(result)
             if not use_tqdm:
                 logger.info("  Saved: %s", result.name)

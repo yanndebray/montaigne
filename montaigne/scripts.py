@@ -97,7 +97,7 @@ def _validate_overview_response(text: str) -> List[str]:
 
 
 IMAGE_EXTENSIONS = {".jpeg", ".jpg", ".png", ".gif", ".webp"}
-SCRIPT_MODEL = "gemini-3-pro-preview"
+DEFAULT_SCRIPT_MODEL = "gemini-3-pro-preview"
 
 
 def _get_arc_position(slide_num: int, total: int) -> str:
@@ -126,7 +126,9 @@ def _get_arc_position(slide_num: int, total: int) -> str:
         return "Closing - inspiring, forward-looking, call to action"
 
 
-def analyze_presentation_overview(images: List[Path], context: str = "", client=None) -> dict:
+def analyze_presentation_overview(
+    images: List[Path], context: str = "", client=None, model: Optional[str] = None
+) -> dict:
     """
     First pass: analyze all slides to create a presentation overview.
 
@@ -136,6 +138,7 @@ def analyze_presentation_overview(images: List[Path], context: str = "", client=
         images: List of paths to slide images
         context: Optional user-provided context about the presentation
         client: Optional pre-configured Gemini client
+        model: Optional model name (default: DEFAULT_SCRIPT_MODEL)
 
     Returns:
         Dict with keys:
@@ -146,6 +149,7 @@ def analyze_presentation_overview(images: List[Path], context: str = "", client=
         - slide_summaries: List of brief summaries for each slide
         - terminology: List of technical terms for pronunciation guide
     """
+    model = model or DEFAULT_SCRIPT_MODEL
     from google.genai import types
 
     if client is None:
@@ -197,7 +201,7 @@ NARRATIVE_NOTES: [2-3 sentences about the narrative arc - how the presentation f
 
     try:
         response = client.models.generate_content(
-            model=SCRIPT_MODEL,
+            model=model,
             contents=contents,
         )
         text = response.text
@@ -266,6 +270,7 @@ def generate_slide_script(
     previous_summary: str = "",
     upcoming_preview: str = "",
     presentation_overview: Optional[dict] = None,
+    model: Optional[str] = None,
 ) -> dict:
     """
     Generate a voiceover script for a single slide image using Gemini.
@@ -280,12 +285,14 @@ def generate_slide_script(
         upcoming_preview: Brief preview of the next slide's topic
         presentation_overview: Dict from analyze_presentation_overview() with
             topic, audience, tone, and other holistic context
+        model: Optional model name (default: DEFAULT_SCRIPT_MODEL)
 
     Returns:
         Dict with 'number', 'title', 'duration', 'tone', and 'text' keys
     """
     from google.genai import types
 
+    model = model or DEFAULT_SCRIPT_MODEL
     image_path = Path(image_path)
     if not image_path.exists():
         raise FileNotFoundError(f"Image not found: {image_path}")
@@ -366,7 +373,7 @@ SCRIPT:
 
     try:
         response = client.models.generate_content(
-            model=SCRIPT_MODEL,
+            model=model,
             contents=contents,
         )
         text = response.text
@@ -408,7 +415,10 @@ SCRIPT:
 
 
 def generate_scripts(
-    input_path: Path, output_path: Optional[Path] = None, context: str = ""
+    input_path: Path,
+    output_path: Optional[Path] = None,
+    context: str = "",
+    model: Optional[str] = None,
 ) -> Path:
     """
     Generate voiceover scripts from PDF or image folder.
@@ -421,10 +431,12 @@ def generate_scripts(
         input_path: PDF file or directory containing slide images
         output_path: Path for output markdown file (default: {input_stem}_voiceover.md)
         context: Optional context about the presentation
+        model: Optional model name (default: gemini-3-pro-preview)
 
     Returns:
         Path to generated markdown script file
     """
+    model = model or DEFAULT_SCRIPT_MODEL
     from .pdf import extract_pdf_pages
 
     input_path = Path(input_path)
@@ -456,9 +468,12 @@ def generate_scripts(
     total_slides = len(images)
 
     # === PASS 1: Analyze presentation overview ===
+    logger.info("Using model: %s", model)
     logger.info("[Pass 1/2] Analyzing presentation overview (%d slides)...", total_slides)
     try:
-        overview = analyze_presentation_overview(images, context=context, client=client)
+        overview = analyze_presentation_overview(
+            images, context=context, client=client, model=model
+        )
         logger.info("  Topic: %s", overview["topic"])
         logger.info("  Audience: %s", overview["audience"])
         logger.info("  Tone: %s", overview["tone"])
@@ -522,6 +537,7 @@ def generate_scripts(
                 previous_summary=previous_summary,
                 upcoming_preview=upcoming_preview,
                 presentation_overview=overview,
+                model=model,
             )
             slides_data.append(slide_data)
             if not use_tqdm:

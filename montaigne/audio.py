@@ -23,7 +23,7 @@ class GeminiQuotaError(Exception):
 # Available Gemini TTS voices
 VOICES = ["Puck", "Charon", "Kore", "Fenrir", "Aoede", "Orus"]
 DEFAULT_VOICE = "Orus"
-TTS_MODEL = "gemini-2.5-pro-preview-tts"
+DEFAULT_TTS_MODEL = "gemini-2.5-pro-preview-tts"
 
 
 def parse_voiceover_script(script_path: Path) -> List[Dict]:
@@ -166,14 +166,27 @@ def _convert_to_wav(audio_data: bytes, mime_type: str) -> bytes:
 
 
 def generate_slide_audio(
-    text: str, output_path: Path, voice: str = DEFAULT_VOICE, client=None
+    text: str,
+    output_path: Path,
+    voice: str = DEFAULT_VOICE,
+    client=None,
+    model: Optional[str] = None,
 ) -> Path:
     """Generate audio for a single text using Gemini TTS (.wav).
+
+    Args:
+        text: Text to convert to speech
+        output_path: Path to save the audio file
+        voice: Voice name to use (default: Orus)
+        client: Optional pre-configured Gemini client
+        model: Optional model name (default: gemini-2.5-pro-preview-tts)
 
     Raises:
         GeminiQuotaError: When API quota is exhausted (daily limit reached)
     """
     from google.genai import types
+
+    model = model or DEFAULT_TTS_MODEL
 
     if client is None:
         client = get_gemini_client()
@@ -191,7 +204,7 @@ def generate_slide_audio(
 
     try:
         for chunk in client.models.generate_content_stream(
-            model=TTS_MODEL, contents=contents, config=config
+            model=model, contents=contents, config=config
         ):
             if (
                 chunk.candidates
@@ -239,8 +252,21 @@ def generate_audio(
     output_dir: Optional[Path] = None,
     voice: Optional[str] = None,
     provider: str = "gemini",
+    model: Optional[str] = None,
 ) -> List[Path]:
-    """Main entry point to generate audio for a full script."""
+    """Main entry point to generate audio for a full script.
+
+    Args:
+        script_path: Path to voiceover script markdown file
+        output_dir: Directory for output audio files
+        voice: Voice name to use
+        provider: TTS provider ("gemini" or "elevenlabs")
+        model: Optional Gemini model name (default: gemini-2.5-flash-preview-tts)
+
+    Returns:
+        List of paths to generated audio files
+    """
+    model = model or DEFAULT_TTS_MODEL
     script_path = Path(script_path)
     if output_dir is None:
         output_dir = script_path.parent / f"{script_path.stem}_audio"
@@ -250,6 +276,8 @@ def generate_audio(
 
     logger.info("Found %d slides in %s", len(slides), script_path.name)
     logger.info("Using Provider: %s", provider.upper())
+    if provider.lower() == "gemini":
+        logger.info("Using model: %s", model)
 
     is_eleven = provider.lower() == "elevenlabs"
     client = get_elevenlabs_client() if is_eleven else get_gemini_client()
@@ -277,7 +305,9 @@ def generate_audio(
                     slide["text"], output_path, voice=active_voice, client=client
                 )
             else:
-                generate_slide_audio(slide["text"], output_path, voice=active_voice, client=client)
+                generate_slide_audio(
+                    slide["text"], output_path, voice=active_voice, client=client, model=model
+                )
             generated_files.append(output_path)
         except ElevenLabsQuotaError as e:
             # Fail fast on quota errors - no point continuing

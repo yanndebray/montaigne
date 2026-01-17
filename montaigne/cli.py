@@ -122,7 +122,7 @@ def cmd_script(args):
     output_path = Path(args.output) if args.output else None
     context = resolve_context(args.context)
 
-    generate_scripts(input_path, output_path=output_path, context=context)
+    generate_scripts(input_path, output_path=output_path, context=context, model=args.model)
 
 
 def cmd_audio(args):
@@ -132,8 +132,9 @@ def cmd_audio(args):
 
     if args.list_voices:
         from .audio import list_voices
+
         list_voices(provider=args.provider)
-        return # Stop execution here
+        return  # Stop execution here
 
     if not check_dependencies():
         logger.error("Dependencies not installed. Run: essai setup")
@@ -155,12 +156,12 @@ def cmd_audio(args):
             return
 
     output_dir = Path(args.output) if args.output else None
-    # Changed the last line of cmd_audio to include 'provider'
     generate_audio(
-        script_path, 
-        output_dir=output_dir, 
-        voice=args.voice, 
-        provider=args.provider  # <--- Added this
+        script_path,
+        output_dir=output_dir,
+        voice=args.voice,
+        provider=args.provider,
+        model=args.model,
     )
 
 
@@ -189,7 +190,7 @@ def cmd_images(args):
             return
 
     output_dir = Path(args.output) if args.output else None
-    translate_images(input_path, output_dir=output_dir, target_lang=args.lang)
+    translate_images(input_path, output_dir=output_dir, target_lang=args.lang, model=args.model)
 
 
 def cmd_video(args):
@@ -327,6 +328,7 @@ def cmd_webapp(args):
 # =============================================================================
 # Cloud Commands
 # =============================================================================
+
 
 def cmd_cloud_health(args):
     """Check cloud API health."""
@@ -570,7 +572,13 @@ def cmd_cloud_jobs(args):
     logger.info("-" * 80)
     for job in jobs:
         created = job.get("created_at", "")[:19] if job.get("created_at") else ""
-        logger.info("%-30s %-12s %-10s %s", job["job_id"], job.get("status", ""), job.get("pipeline", ""), created)
+        logger.info(
+            "%-30s %-12s %-10s %s",
+            job["job_id"],
+            job.get("status", ""),
+            job.get("pipeline", ""),
+            created,
+        )
 
 
 def cmd_localize(args):
@@ -643,7 +651,9 @@ def cmd_localize(args):
         if scripts:
             logger.info("Step 3: Auto-detected script: %s", scripts[0].name)
             audio_dir = output_base / "audio"
-            generate_audio(scripts[0], output_dir=audio_dir, voice=args.voice, provider=args.provider)
+            generate_audio(
+                scripts[0], output_dir=audio_dir, voice=args.voice, provider=args.provider
+            )
 
     logger.info("=== Localization Complete ===")
     logger.info("Output: %s/", output_base)
@@ -681,15 +691,9 @@ One-command video:
         """,
     )
     parser.add_argument("--version", action="version", version=f"montaigne {__version__}")
-    parser.add_argument(
-        "--verbose", "-v", action="store_true", help="Show debug output"
-    )
-    parser.add_argument(
-        "--quiet", "-q", action="store_true", help="Show only errors"
-    )
-    parser.add_argument(
-        "--log-file", metavar="FILE", help="Write logs to file"
-    )
+    parser.add_argument("--verbose", "-v", action="store_true", help="Show debug output")
+    parser.add_argument("--quiet", "-q", action="store_true", help="Show only errors")
+    parser.add_argument("--log-file", metavar="FILE", help="Write logs to file")
 
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
@@ -718,8 +722,14 @@ One-command video:
         action="append",
         help="Context string or path to .txt/.md file (can be specified multiple times)",
     )
+    script_parser.add_argument(
+        "--model",
+        "-m",
+        default=None,
+        help="Gemini model for script generation (default: gemini-3-pro-preview)",
+    )
 
- # Audio command
+    # Audio command
     audio_parser = subparsers.add_parser("audio", help="Generate audio from voiceover script")
     audio_parser.add_argument("--script", "-s", help="Path to voiceover script")
     audio_parser.add_argument("--output", "-o", help="Output directory")
@@ -727,7 +737,7 @@ One-command video:
         "--provider",
         choices=["gemini", "elevenlabs"],
         default="gemini",
-        help="TTS provider to use (default: gemini)"
+        help="TTS provider to use (default: gemini)",
     )
     audio_parser.add_argument(
         "--voice",
@@ -735,9 +745,15 @@ One-command video:
         help="Voice name: Gemini (Puck, Orus, etc.) or ElevenLabs (preset: adam, bob, william, george; or any voice ID)",
     )
     audio_parser.add_argument(
-    "--list-voices", 
-    action="store_true", 
-    help="List available voices for the provider"
+        "--list-voices",
+        action="store_true",
+        help="List available voices for the provider",
+    )
+    audio_parser.add_argument(
+        "--model",
+        "-m",
+        default=None,
+        help="Gemini model for TTS (default: gemini-2.5-pro-preview-tts)",
     )
 
     # Images command
@@ -746,6 +762,12 @@ One-command video:
     images_parser.add_argument("--output", "-o", help="Output directory")
     images_parser.add_argument(
         "--lang", "-l", default="French", help="Target language (default: French)"
+    )
+    images_parser.add_argument(
+        "--model",
+        "-m",
+        default=None,
+        help="Gemini model for image translation (default: gemini-3-pro-image-preview)",
     )
 
     # Localize command (full pipeline)
@@ -820,9 +842,7 @@ Environment:
   MONTAIGNE_API_URL    Cloud API URL (default: configured endpoint)
         """,
     )
-    cloud_parser.add_argument(
-        "--api-url", help="Cloud API URL (overrides MONTAIGNE_API_URL)"
-    )
+    cloud_parser.add_argument("--api-url", help="Cloud API URL (overrides MONTAIGNE_API_URL)")
     cloud_subparsers = cloud_parser.add_subparsers(dest="cloud_command", help="Cloud commands")
 
     # Cloud health command
