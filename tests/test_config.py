@@ -43,8 +43,15 @@ class TestLoadApiKey:
         """Load API key from environment variable."""
         with patch("dotenv.load_dotenv"):
             with patch.dict(os.environ, {"GEMINI_API_KEY": "test-api-key-12345"}, clear=False):
-                result = load_api_key()
+                result = load_api_key("gemini")
                 assert result == "test-api-key-12345"
+
+    def test_load_elevenlabs_api_key_from_env(self):
+        """Load ElevenLabs API key from environment variable."""
+        with patch("dotenv.load_dotenv"):
+            with patch.dict(os.environ, {"ELEVENLABS_API_KEY": "eleven-test-key"}, clear=False):
+                result = load_api_key("elevenlabs")
+                assert result == "eleven-test-key"
 
     def test_load_api_key_missing_exits(self):
         """Missing API key should call sys.exit(1)."""
@@ -53,12 +60,19 @@ class TestLoadApiKey:
         try:
             with patch("dotenv.load_dotenv"):
                 with pytest.raises(SystemExit) as exc_info:
-                    load_api_key()
+                    load_api_key("gemini")
                 assert exc_info.value.code == 1
         finally:
             # Restore original value
             if original_key:
                 os.environ["GEMINI_API_KEY"] = original_key
+
+    def test_load_api_key_unknown_client_exits(self):
+        """Unknown client name should call sys.exit(1)."""
+        with patch("dotenv.load_dotenv"):
+            with pytest.raises(SystemExit) as exc_info:
+                load_api_key("unknown_client")
+            assert exc_info.value.code == 1
 
     def test_load_api_key_empty_string_exits(self):
         """Empty API key string should call sys.exit(1)."""
@@ -67,14 +81,14 @@ class TestLoadApiKey:
                 # Temporarily set empty key
                 os.environ["GEMINI_API_KEY"] = ""
                 with pytest.raises(SystemExit) as exc_info:
-                    load_api_key()
+                    load_api_key("gemini")
                 assert exc_info.value.code == 1
 
     def test_load_dotenv_called(self):
         """load_dotenv should be called to load .env file."""
         with patch("dotenv.load_dotenv") as mock_load:
             with patch.dict(os.environ, {"GEMINI_API_KEY": "test-key"}, clear=False):
-                load_api_key()
+                load_api_key("gemini")
                 mock_load.assert_called_once()
 
 
@@ -115,7 +129,7 @@ class TestApiKeyFormats:
         """Standard Gemini API key format should work."""
         with patch("dotenv.load_dotenv"):
             with patch.dict(os.environ, {"GEMINI_API_KEY": "AIzaSyA1234567890abcdefghijklmnopqrstuvwx"}, clear=False):
-                result = load_api_key()
+                result = load_api_key("gemini")
                 assert result.startswith("AIza")
 
     def test_api_key_with_whitespace_preserved(self):
@@ -124,5 +138,5 @@ class TestApiKeyFormats:
         # This test documents current behavior
         with patch("dotenv.load_dotenv"):
             with patch.dict(os.environ, {"GEMINI_API_KEY": " test-key "}, clear=False):
-                result = load_api_key()
+                result = load_api_key("gemini")
                 assert result == " test-key "
