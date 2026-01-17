@@ -17,6 +17,7 @@ def check_dependencies() -> bool:
         from google import genai  # noqa: F401
         from elevenlabs.client import ElevenLabs  # noqa: F401
         import fitz  # noqa: F401
+
         return True
     except ImportError:
         return False
@@ -32,6 +33,7 @@ def install_dependencies():
 def load_api_key(client_name: str) -> str:
     """Load the requested API key from .env file."""
     from dotenv import load_dotenv
+
     load_dotenv()
 
     if client_name == "gemini":
@@ -51,14 +53,36 @@ def load_api_key(client_name: str) -> str:
     logger.error("Unknown client '%s' specified", client_name)
     sys.exit(1)
 
+
 def get_gemini_client():
     """Get a configured Gemini client."""
     from google import genai
+
     api_key = load_api_key("gemini")
     return genai.Client(api_key=api_key)
+
 
 def get_elevenlabs_client():
     """Get a configured ElevenLabs client."""
     from elevenlabs.client import ElevenLabs
+
     api_key = load_api_key("elevenlabs")
     return ElevenLabs(api_key=api_key)
+
+
+def list_models(filter_term: str = None):
+    """List available Gemini models.
+
+    Args:
+        filter_term: Optional filter (e.g., 'tts', 'flash', 'pro')
+    """
+    client = get_gemini_client()
+    models = client.models.list()
+
+    model_names = []
+    for model in models:
+        name = model.name
+        if filter_term is None or filter_term.lower() in name.lower():
+            model_names.append(name)
+
+    return sorted(model_names)

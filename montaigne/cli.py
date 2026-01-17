@@ -73,6 +73,30 @@ def cmd_setup(args):
     logger.info("Setup complete!")
 
 
+def cmd_models(args):
+    """List available Gemini models."""
+    from .config import list_models
+
+    filter_term = args.filter if args.filter else None
+
+    logger.info("=== Available Gemini Models ===")
+    if filter_term:
+        logger.info("Filter: %s", filter_term)
+
+    models = list_models(filter_term)
+
+    if not models:
+        logger.info("No models found matching filter.")
+        return
+
+    for model in models:
+        # Strip 'models/' prefix for cleaner output
+        display_name = model.replace("models/", "")
+        logger.info("  %s", display_name)
+
+    logger.info("\nTotal: %d models", len(models))
+
+
 def cmd_pdf(args):
     """Extract PDF pages to images."""
     from .config import check_dependencies
@@ -702,6 +726,14 @@ One-command video:
     # Setup command
     subparsers.add_parser("setup", help="Install dependencies and verify configuration")
 
+    # Models command
+    models_parser = subparsers.add_parser("models", help="List available Gemini models")
+    models_parser.add_argument(
+        "--filter",
+        "-f",
+        help="Filter models by name (e.g., 'tts', 'flash', 'pro', 'image')",
+    )
+
     # Webapp command
     subparsers.add_parser("webapp", help="Launch the Streamlit web application")
 
@@ -927,6 +959,7 @@ Environment:
 
     commands = {
         "setup": cmd_setup,
+        "models": cmd_models,
         "webapp": cmd_webapp,
         "pdf": cmd_pdf,
         "script": cmd_script,
