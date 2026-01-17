@@ -1,11 +1,83 @@
 """Script generation from PDF slides using Gemini AI."""
 
 import mimetypes
+import re
 import sys
+import warnings
 from pathlib import Path
 from typing import List, Optional
 
 from .config import get_gemini_client
+
+
+def _parse_field(text: str, field: str, multiline: bool = False) -> Optional[str]:
+    """Extract field value with robust regex matching.
+
+    Args:
+        text: The full response text to parse
+        field: Field name to extract (e.g., "TOPIC", "AUDIENCE")
+        multiline: If True, capture until next field; if False, capture single line
+
+    Returns:
+        Extracted value or None if not found
+    """
+    if multiline:
+        # Match until next uppercase field or end of text
+        # Use word boundary (?<![A-Z_]) to avoid matching SUBTOPIC when looking for TOPIC
+        pattern = rf'(?<![A-Z_]){field}\s*:\s*(.+?)(?=\n[A-Z_]+\s*:|$)'
+        match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
+    else:
+        # Match single line value with word boundary
+        pattern = rf'(?<![A-Z_]){field}\s*:\s*(.+?)(?:\n|$)'
+        match = re.search(pattern, text, re.IGNORECASE)
+
+    if match:
+        value = match.group(1).strip()
+        # Strip common markdown formatting
+        value = re.sub(r'\*\*(.+?)\*\*', r'\1', value)  # Bold
+        value = re.sub(r'\*(.+?)\*', r'\1', value)  # Italic
+        value = re.sub(r'`(.+?)`', r'\1', value)  # Code
+        return value
+    return None
+
+
+def _parse_numbered_list(text: str) -> List[str]:
+    """Parse a numbered list from text.
+
+    Handles formats like:
+    - "1. Item one"
+    - "1) Item one"
+    - "1 - Item one"
+    """
+    items = []
+    # Match lines starting with number followed by delimiter
+    pattern = r'^\s*(\d+)\s*[.\-)\]]\s*(.+)$'
+    for line in text.strip().split('\n'):
+        match = re.match(pattern, line)
+        if match:
+            items.append(match.group(2).strip())
+    return items
+
+
+def _validate_overview_response(text: str) -> List[str]:
+    """Validate that response contains expected fields.
+
+    Returns:
+        List of warning messages for missing fields
+    """
+    missing = []
+    required_fields = ["TOPIC", "AUDIENCE", "TONE", "SLIDE_SUMMARIES"]
+    optional_fields = ["TOTAL_DURATION", "TERMINOLOGY", "NARRATIVE_NOTES"]
+
+    for field in required_fields:
+        if not re.search(rf'{field}\s*:', text, re.IGNORECASE):
+            missing.append(f"Missing required field: {field}")
+
+    for field in optional_fields:
+        if not re.search(rf'{field}\s*:', text, re.IGNORECASE):
+            missing.append(f"Missing optional field: {field}")
+
+    return missing
 
 IMAGE_EXTENSIONS = {".jpeg", ".jpg", ".png", ".gif", ".webp"}
 SCRIPT_MODEL = "gemini-3-pro-preview"
@@ -113,7 +185,13 @@ NARRATIVE_NOTES: [2-3 sentences about the narrative arc - how the presentation f
 
     text = response.text
 
-    # Parse the response
+    # Validate response and warn about missing fields
+    validation_warnings = _validate_overview_response(text)
+    for warning in validation_warnings:
+        if "required" in warning.lower():
+            warnings.warn(warning, UserWarning)
+
+    # Parse the response with defaults
     overview = {
         "topic": "Presentation",
         "audience": "General audience",
@@ -124,49 +202,33 @@ NARRATIVE_NOTES: [2-3 sentences about the narrative arc - how the presentation f
         "narrative_notes": "",
     }
 
-    # Extract each field
-    if "TOPIC:" in text:
-        overview["topic"] = text.split("TOPIC:")[1].split("\n")[0].strip()
+    # Extract each field using robust regex parsing
+    if topic := _parse_field(text, "TOPIC"):
+        overview["topic"] = topic
 
-    if "AUDIENCE:" in text:
-        overview["audience"] = text.split("AUDIENCE:")[1].split("\n")[0].strip()
+    if audience := _parse_field(text, "AUDIENCE"):
+        overview["audience"] = audience
 
-    if "TONE:" in text:
-        overview["tone"] = text.split("TONE:")[1].split("\n")[0].strip()
+    if tone := _parse_field(text, "TONE"):
+        overview["tone"] = tone
 
-    if "TOTAL_DURATION:" in text:
-        overview["total_duration"] = text.split("TOTAL_DURATION:")[1].split("\n")[0].strip()
+    if duration := _parse_field(text, "TOTAL_DURATION"):
+        overview["total_duration"] = duration
 
-    if "SLIDE_SUMMARIES:" in text:
-        summaries_section = text.split("SLIDE_SUMMARIES:")[1]
-        # Find where the next section starts
-        end_markers = ["TERMINOLOGY:", "NARRATIVE_NOTES:"]
-        for marker in end_markers:
-            if marker in summaries_section:
-                summaries_section = summaries_section.split(marker)[0]
-
-        # Parse numbered list
-        summaries = []
-        for line in summaries_section.strip().split("\n"):
-            line = line.strip()
-            if line and line[0].isdigit():
-                # Remove the number prefix (e.g., "1. ", "12. ")
-                parts = line.split(".", 1)
-                if len(parts) > 1:
-                    summaries.append(parts[1].strip())
-                else:
-                    summaries.append(line)
+    # Parse slide summaries (multiline section)
+    if summaries_text := _parse_field(text, "SLIDE_SUMMARIES", multiline=True):
+        summaries = _parse_numbered_list(summaries_text)
         if summaries:
             overview["slide_summaries"] = summaries
 
-    if "TERMINOLOGY:" in text:
-        term_line = text.split("TERMINOLOGY:")[1].split("\n")[0].strip()
-        if "NARRATIVE_NOTES:" in term_line:
-            term_line = term_line.split("NARRATIVE_NOTES:")[0].strip()
+    # Parse terminology (comma-separated on single line)
+    if term_line := _parse_field(text, "TERMINOLOGY"):
         overview["terminology"] = [t.strip() for t in term_line.split(",") if t.strip()]
 
-    if "NARRATIVE_NOTES:" in text:
-        overview["narrative_notes"] = text.split("NARRATIVE_NOTES:")[1].strip().split("\n\n")[0]
+    # Parse narrative notes (multiline)
+    if notes := _parse_field(text, "NARRATIVE_NOTES", multiline=True):
+        # Take first paragraph only
+        overview["narrative_notes"] = notes.split("\n\n")[0].strip()
 
     # Pad summaries if we have fewer than total slides
     while len(overview["slide_summaries"]) < len(images):

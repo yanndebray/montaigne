@@ -5,6 +5,9 @@ from pathlib import Path
 
 from montaigne.scripts import (
     _get_arc_position,
+    _parse_field,
+    _parse_numbered_list,
+    _validate_overview_response,
 )
 
 
@@ -121,9 +124,9 @@ SLIDE_SUMMARIES:
 
 def _parse_overview_text(text: str, num_slides: int) -> dict:
     """
-    Helper to parse overview text - extracted from analyze_presentation_overview.
+    Helper to parse overview text using the robust parsing functions.
 
-    This mirrors the parsing logic in scripts.py for testing purposes.
+    This uses the same logic as analyze_presentation_overview in scripts.py.
     """
     overview = {
         "topic": "Presentation",
@@ -135,52 +138,209 @@ def _parse_overview_text(text: str, num_slides: int) -> dict:
         "narrative_notes": ""
     }
 
-    # Extract each field
-    if "TOPIC:" in text:
-        overview["topic"] = text.split("TOPIC:")[1].split("\n")[0].strip()
+    # Extract each field using robust regex parsing
+    if topic := _parse_field(text, "TOPIC"):
+        overview["topic"] = topic
 
-    if "AUDIENCE:" in text:
-        overview["audience"] = text.split("AUDIENCE:")[1].split("\n")[0].strip()
+    if audience := _parse_field(text, "AUDIENCE"):
+        overview["audience"] = audience
 
-    if "TONE:" in text:
-        overview["tone"] = text.split("TONE:")[1].split("\n")[0].strip()
+    if tone := _parse_field(text, "TONE"):
+        overview["tone"] = tone
 
-    if "TOTAL_DURATION:" in text:
-        overview["total_duration"] = text.split("TOTAL_DURATION:")[1].split("\n")[0].strip()
+    if duration := _parse_field(text, "TOTAL_DURATION"):
+        overview["total_duration"] = duration
 
-    if "SLIDE_SUMMARIES:" in text:
-        summaries_section = text.split("SLIDE_SUMMARIES:")[1]
-        end_markers = ["TERMINOLOGY:", "NARRATIVE_NOTES:"]
-        for marker in end_markers:
-            if marker in summaries_section:
-                summaries_section = summaries_section.split(marker)[0]
-
-        summaries = []
-        for line in summaries_section.strip().split("\n"):
-            line = line.strip()
-            if line and line[0].isdigit():
-                parts = line.split(".", 1)
-                if len(parts) > 1:
-                    summaries.append(parts[1].strip())
-                else:
-                    summaries.append(line)
+    # Parse slide summaries (multiline section)
+    if summaries_text := _parse_field(text, "SLIDE_SUMMARIES", multiline=True):
+        summaries = _parse_numbered_list(summaries_text)
         if summaries:
             overview["slide_summaries"] = summaries
 
-    if "TERMINOLOGY:" in text:
-        term_line = text.split("TERMINOLOGY:")[1].split("\n")[0].strip()
-        if "NARRATIVE_NOTES:" in term_line:
-            term_line = term_line.split("NARRATIVE_NOTES:")[0].strip()
+    # Parse terminology (comma-separated on single line)
+    if term_line := _parse_field(text, "TERMINOLOGY"):
         overview["terminology"] = [t.strip() for t in term_line.split(",") if t.strip()]
 
-    if "NARRATIVE_NOTES:" in text:
-        overview["narrative_notes"] = text.split("NARRATIVE_NOTES:")[1].strip().split("\n\n")[0]
+    # Parse narrative notes (multiline)
+    if notes := _parse_field(text, "NARRATIVE_NOTES", multiline=True):
+        overview["narrative_notes"] = notes.split("\n\n")[0].strip()
 
     # Pad summaries if needed
     while len(overview["slide_summaries"]) < num_slides:
         overview["slide_summaries"].append(f"Slide {len(overview['slide_summaries']) + 1}")
 
     return overview
+
+
+class TestParseField:
+    """Tests for the _parse_field helper function."""
+
+    def test_parse_simple_field(self):
+        """Parse a simple single-line field."""
+        text = "TOPIC: Machine Learning Basics"
+        result = _parse_field(text, "TOPIC")
+        assert result == "Machine Learning Basics"
+
+    def test_parse_field_case_insensitive(self):
+        """Field matching should be case-insensitive."""
+        assert _parse_field("topic: lowercase", "TOPIC") == "lowercase"
+        assert _parse_field("Topic: Title Case", "TOPIC") == "Title Case"
+        assert _parse_field("TOPIC: UPPERCASE", "topic") == "UPPERCASE"
+
+    def test_parse_field_with_whitespace_variations(self):
+        """Handle various whitespace around colon."""
+        assert _parse_field("TOPIC:No space", "TOPIC") == "No space"
+        assert _parse_field("TOPIC:  Extra spaces", "TOPIC") == "Extra spaces"
+        assert _parse_field("TOPIC :Space before", "TOPIC") == "Space before"
+        assert _parse_field("TOPIC : Spaces both", "TOPIC") == "Spaces both"
+
+    def test_parse_field_strips_markdown_bold(self):
+        """Strip markdown bold formatting."""
+        text = "TOPIC: **Bold Topic**"
+        result = _parse_field(text, "TOPIC")
+        assert result == "Bold Topic"
+
+    def test_parse_field_strips_markdown_italic(self):
+        """Strip markdown italic formatting."""
+        text = "TOPIC: *Italic Topic*"
+        result = _parse_field(text, "TOPIC")
+        assert result == "Italic Topic"
+
+    def test_parse_field_strips_markdown_code(self):
+        """Strip markdown code formatting."""
+        text = "TOPIC: `Code Topic`"
+        result = _parse_field(text, "TOPIC")
+        assert result == "Code Topic"
+
+    def test_parse_field_multiline(self):
+        """Parse multiline field value."""
+        text = """NARRATIVE_NOTES: First line of notes.
+Second line continues here.
+Third line as well.
+
+NEXT_FIELD: Something else"""
+        result = _parse_field(text, "NARRATIVE_NOTES", multiline=True)
+        assert "First line" in result
+        assert "Second line" in result
+        assert "Third line" in result
+        assert "Something else" not in result
+
+    def test_parse_field_not_found(self):
+        """Return None when field not found."""
+        text = "TOPIC: Something"
+        result = _parse_field(text, "AUDIENCE")
+        assert result is None
+
+    def test_parse_field_avoids_partial_match(self):
+        """Should not match partial field names."""
+        text = "SUBTOPIC: This is a subtopic\nTOPIC: Main topic"
+        result = _parse_field(text, "TOPIC")
+        assert result == "Main topic"
+
+
+class TestParseNumberedList:
+    """Tests for the _parse_numbered_list helper function."""
+
+    def test_parse_dot_format(self):
+        """Parse '1. Item' format."""
+        text = """1. First item
+2. Second item
+3. Third item"""
+        result = _parse_numbered_list(text)
+        assert result == ["First item", "Second item", "Third item"]
+
+    def test_parse_parenthesis_format(self):
+        """Parse '1) Item' format."""
+        text = """1) First item
+2) Second item"""
+        result = _parse_numbered_list(text)
+        assert result == ["First item", "Second item"]
+
+    def test_parse_dash_format(self):
+        """Parse '1 - Item' format."""
+        text = """1 - First item
+2 - Second item"""
+        result = _parse_numbered_list(text)
+        assert result == ["First item", "Second item"]
+
+    def test_parse_with_leading_whitespace(self):
+        """Handle leading whitespace on lines."""
+        text = """  1. First item
+    2. Second item"""
+        result = _parse_numbered_list(text)
+        assert result == ["First item", "Second item"]
+
+    def test_parse_double_digit_numbers(self):
+        """Handle double-digit slide numbers."""
+        text = """10. Tenth item
+11. Eleventh item
+12. Twelfth item"""
+        result = _parse_numbered_list(text)
+        assert len(result) == 3
+        assert result[0] == "Tenth item"
+
+    def test_parse_empty_text(self):
+        """Empty text returns empty list."""
+        result = _parse_numbered_list("")
+        assert result == []
+
+    def test_parse_non_numbered_lines_ignored(self):
+        """Non-numbered lines should be ignored."""
+        text = """1. First item
+Some random text
+2. Second item
+More random text"""
+        result = _parse_numbered_list(text)
+        assert result == ["First item", "Second item"]
+
+
+class TestValidateOverviewResponse:
+    """Tests for the _validate_overview_response function."""
+
+    def test_complete_response_no_warnings(self):
+        """Complete response should have no required field warnings."""
+        text = """TOPIC: Test
+AUDIENCE: Developers
+TONE: Technical
+SLIDE_SUMMARIES:
+1. Slide one
+TOTAL_DURATION: 10 minutes
+TERMINOLOGY: ML, AI
+NARRATIVE_NOTES: Some notes"""
+        warnings = _validate_overview_response(text)
+        required_missing = [w for w in warnings if "required" in w.lower()]
+        assert len(required_missing) == 0
+
+    def test_missing_required_field(self):
+        """Missing required field should generate warning."""
+        text = """AUDIENCE: Developers
+TONE: Technical
+SLIDE_SUMMARIES:
+1. Slide one"""
+        warnings = _validate_overview_response(text)
+        assert any("TOPIC" in w for w in warnings)
+
+    def test_missing_optional_field(self):
+        """Missing optional field should generate warning."""
+        text = """TOPIC: Test
+AUDIENCE: Developers
+TONE: Technical
+SLIDE_SUMMARIES:
+1. Slide one"""
+        warnings = _validate_overview_response(text)
+        # Should warn about missing optional fields
+        assert any("TERMINOLOGY" in w or "optional" in w.lower() for w in warnings)
+
+    def test_case_insensitive_validation(self):
+        """Validation should be case-insensitive."""
+        text = """topic: Test
+audience: Developers
+tone: Technical
+slide_summaries:
+1. Slide one"""
+        warnings = _validate_overview_response(text)
+        required_missing = [w for w in warnings if "required" in w.lower()]
+        assert len(required_missing) == 0
 
 
 class TestParseOverviewEdgeCases:
