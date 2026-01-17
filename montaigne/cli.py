@@ -8,6 +8,42 @@ from pathlib import Path
 from . import __version__
 
 
+def resolve_context(context_values: list) -> str:
+    """
+    Resolve a list of context values into a single combined context string.
+
+    Each context value can be either:
+    - A string to use directly
+    - A path to a text or markdown file (contents will be read)
+
+    Args:
+        context_values: List of context strings or file paths
+
+    Returns:
+        Combined context string with all values joined by newlines
+    """
+    if not context_values:
+        return ""
+
+    resolved = []
+    for value in context_values:
+        path = Path(value)
+        # Check if it's a file path (exists and is a text/markdown file)
+        if path.exists() and path.is_file():
+            suffix = path.suffix.lower()
+            if suffix in {".txt", ".md", ".markdown", ".text"}:
+                try:
+                    content = path.read_text(encoding="utf-8")
+                    resolved.append(f"[From {path.name}]\n{content}")
+                    continue
+                except Exception:
+                    pass  # Fall through to use as string
+        # Use as literal string
+        resolved.append(value)
+
+    return "\n\n".join(resolved)
+
+
 def cmd_setup(args):
     """Install dependencies and verify configuration."""
     from .config import check_dependencies, install_dependencies
@@ -81,7 +117,7 @@ def cmd_script(args):
                 return
 
     output_path = Path(args.output) if args.output else None
-    context = args.context or ""
+    context = resolve_context(args.context)
 
     generate_scripts(input_path, output_path=output_path, context=context)
 
@@ -174,14 +210,14 @@ def cmd_video(args):
         output_path = Path(args.output) if args.output else None
 
         generate_video_from_pdf(
-                    pdf_path,
-                    script_path=script_path,
-                    output_path=output_path,
-                    resolution=args.resolution,
-                    voice=args.voice,
-                    provider=args.provider,       # <--- Added this
-                    context=args.context or "",   
-                )
+            pdf_path,
+            script_path=script_path,
+            output_path=output_path,
+            resolution=args.resolution,
+            voice=args.voice,
+            provider=args.provider,
+            context=resolve_context(args.context),
+        )
         return
 
     # Otherwise, combine existing images and audio
@@ -668,7 +704,12 @@ One-command video:
     )
     script_parser.add_argument("--input", "-i", help="PDF file or images folder")
     script_parser.add_argument("--output", "-o", help="Output markdown file")
-    script_parser.add_argument("--context", "-c", help="Presentation context/description")
+    script_parser.add_argument(
+        "--context",
+        "-c",
+        action="append",
+        help="Context string or path to .txt/.md file (can be specified multiple times)",
+    )
 
  # Audio command
     audio_parser = subparsers.add_parser("audio", help="Generate audio from voiceover script")
@@ -748,7 +789,10 @@ One-command video:
     # Add both here:
     video_parser.add_argument("--provider", choices=["gemini", "elevenlabs"], default="gemini")
     video_parser.add_argument(
-        "--context", "-c", help="Additional context/instructions for script generation"
+        "--context",
+        "-c",
+        action="append",
+        help="Context string or path to .txt/.md file (can be specified multiple times)",
     )
 
     # Cloud command group
