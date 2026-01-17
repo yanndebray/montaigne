@@ -7,6 +7,9 @@ from pathlib import Path
 from typing import List, Optional, Union
 
 from .config import get_gemini_client
+from .logging import get_logger
+
+logger = get_logger(__name__)
 
 IMAGE_EXTENSIONS = {".jpeg", ".jpg", ".png", ".gif", ".webp"}
 IMAGE_MODEL = "gemini-3-pro-image-preview"
@@ -143,7 +146,7 @@ def translate_images(
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    print(f"\nFound {len(images)} image(s) to translate")
+    logger.info("Found %d image(s) to translate", len(images))
 
     client = get_gemini_client()
     lang_code = target_lang[:2].lower()
@@ -163,17 +166,17 @@ def translate_images(
 
     for image_path in image_iterator:
         if not use_tqdm:
-            print(f"  Translating: {image_path.name}...")
+            logger.info("Translating: %s...", image_path.name)
 
         try:
             output_path = output_dir / f"{image_path.stem}_{lang_code}{image_path.suffix}"
             result = translate_image(image_path, output_path, target_lang, client=client)
             translated_images.append(result)
             if not use_tqdm:
-                print(f"    Saved: {result.name}")
+                logger.info("  Saved: %s", result.name)
         except Exception as e:
             if not use_tqdm:
-                print(f"    Error: {e}")
+                logger.error("  Error: %s", e)
 
-    print(f"\nTranslated {len(translated_images)} images to {output_dir}/")
+    logger.info("Translated %d images to %s/", len(translated_images), output_dir)
     return translated_images

@@ -8,6 +8,9 @@ from pathlib import Path
 from typing import List, Optional
 
 from .config import get_gemini_client
+from .logging import get_logger
+
+logger = get_logger(__name__)
 
 
 def _parse_field(text: str, field: str, multiline: bool = False) -> Optional[str]:
@@ -409,7 +412,7 @@ def generate_scripts(
 
     # Handle PDF input
     if input_path.suffix.lower() == ".pdf":
-        print(f"Extracting pages from PDF: {input_path.name}")
+        logger.info("Extracting pages from PDF: %s", input_path.name)
         images_dir = input_path.parent / f"{input_path.stem}_images"
         images = extract_pdf_pages(input_path, output_dir=images_dir)
         base_name = input_path.stem
@@ -434,14 +437,14 @@ def generate_scripts(
     total_slides = len(images)
 
     # === PASS 1: Analyze presentation overview ===
-    print(f"\n[Pass 1/2] Analyzing presentation overview ({total_slides} slides)...")
+    logger.info("[Pass 1/2] Analyzing presentation overview (%d slides)...", total_slides)
     try:
         overview = analyze_presentation_overview(images, context=context, client=client)
-        print(f"  Topic: {overview['topic']}")
-        print(f"  Audience: {overview['audience']}")
-        print(f"  Tone: {overview['tone']}")
+        logger.info("  Topic: %s", overview["topic"])
+        logger.info("  Audience: %s", overview["audience"])
+        logger.info("  Tone: %s", overview["tone"])
     except Exception as e:
-        print(f"  Warning: Overview analysis failed ({e}), using defaults")
+        logger.warning("  Overview analysis failed (%s), using defaults", e)
         overview = {
             "topic": base_name.replace("_", " ").title(),
             "audience": "General audience",
@@ -453,7 +456,7 @@ def generate_scripts(
         }
 
     # === PASS 2: Generate individual scripts with context ===
-    print(f"\n[Pass 2/2] Generating scripts for {total_slides} slide(s)...")
+    logger.info("[Pass 2/2] Generating scripts for %d slide(s)...", total_slides)
     slides_data = []
 
     # Use tqdm for progress bar if available in TTY environment
@@ -474,7 +477,7 @@ def generate_scripts(
 
     for i, image_path in image_iterator:
         if not use_tqdm:
-            print(f"  Slide {i}/{total_slides}: {image_path.name}...")
+            logger.info("  Slide %d/%d: %s...", i, total_slides, image_path.name)
 
         # Build sliding window context
         previous_summary = ""
@@ -499,10 +502,10 @@ def generate_scripts(
             )
             slides_data.append(slide_data)
             if not use_tqdm:
-                print(f"    [OK] {slide_data['title'][:40]}...")
+                logger.info("    [OK] %s...", slide_data["title"][:40])
         except Exception as e:
             if not use_tqdm:
-                print(f"    [ERROR] {e}")
+                logger.error("    [ERROR] %s", e)
             slides_data.append(
                 {
                     "number": i,
@@ -514,7 +517,7 @@ def generate_scripts(
             )
 
     # === Generate production notes ===
-    print("\nGenerating production notes...")
+    logger.info("Generating production notes...")
     production_notes = _generate_production_notes(
         terminology=overview.get("terminology", []), slides=slides_data, overview=overview
     )
@@ -530,9 +533,9 @@ def generate_scripts(
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(markdown)
 
-    print(f"\nGenerated voiceover script: {output_path}")
-    print(f"  Word count: ~{production_notes['word_count']:,}")
-    print(f"  Estimated duration: {production_notes['estimated_duration']}")
+    logger.info("Generated voiceover script: %s", output_path)
+    logger.info("  Word count: ~%d", production_notes["word_count"])
+    logger.info("  Estimated duration: %s", production_notes["estimated_duration"])
     return output_path
 
 

@@ -6,6 +6,10 @@ import tempfile
 from pathlib import Path
 from typing import Optional
 
+from .logging import get_logger
+
+logger = get_logger(__name__)
+
 
 def check_ffmpeg() -> bool:
     """Check if ffmpeg is available."""
@@ -97,7 +101,7 @@ def generate_video(
 
     # Match images to audio by index
     num_slides = min(len(images), len(audio_files))
-    print(f"\nGenerating video from {num_slides} slides...")
+    logger.info("Generating video from %d slides...", num_slides)
 
     # Determine output path
     if output_path is None:
@@ -129,7 +133,7 @@ def generate_video(
             clip_path = temp_path / f"clip_{i+1:03d}.mp4"
 
             if not use_tqdm:
-                print(f"  Creating clip {i+1}/{num_slides}: {image.name} + {audio.name}")
+                logger.info("Creating clip %d/%d: %s + %s", i+1, num_slides, image.name, audio.name)
             create_slide_clip(image, audio, clip_path, resolution)
             clips.append(clip_path)
 
@@ -140,7 +144,7 @@ def generate_video(
                 f.write(f"file '{clip}'\n")
 
         # Concatenate all clips
-        print(f"  Concatenating {len(clips)} clips...")
+        logger.info("Concatenating %d clips...", len(clips))
         concat_cmd = [
             "ffmpeg",
             "-y",
@@ -156,7 +160,7 @@ def generate_video(
         ]
         subprocess.run(concat_cmd, capture_output=True, check=True)
 
-    print(f"\nGenerated video: {output_path}")
+    logger.info("Generated video: %s", output_path)
 
     # Get video info
     try:
@@ -177,8 +181,8 @@ def generate_video(
                 duration = float(parts[0])
                 size_mb = int(parts[1]) / (1024 * 1024)
                 mins, secs = divmod(int(duration), 60)
-                print(f"  Duration: {mins}:{secs:02d}")
-                print(f"  Size: {size_mb:.1f} MB")
+                logger.info("  Duration: %d:%02d", mins, secs)
+                logger.info("  Size: %.1f MB", size_mb)
     except Exception:
         pass
 
@@ -204,29 +208,29 @@ def generate_video_from_pdf(
     pdf_path = Path(pdf_path)
     base_name = pdf_path.stem
 
-    # Use the provider in the print statement
-    print(f"=== Generating Video from {pdf_path.name} ({provider.upper()}) ===\n")
+    # Use the provider in the log statement
+    logger.info("=== Generating Video from %s (%s) ===", pdf_path.name, provider.upper())
 
     # Step 1: Extract PDF pages
-    print("Step 1: Extracting PDF pages...")
+    logger.info("Step 1: Extracting PDF pages...")
     images_dir = pdf_path.parent / f"{base_name}_images"
     extract_pdf_pages(pdf_path, output_dir=images_dir)
 
     # Step 2: Generate script (Pass the context here)
     if script_path is None:
-        print("\nStep 2: Generating voiceover script...")
+        logger.info("Step 2: Generating voiceover script...")
         script_path = generate_scripts(pdf_path, context=context) # Use upstream context
     else:
         script_path = Path(script_path)
-        print(f"\nStep 2: Using existing script: {script_path.name}")
+        logger.info("Step 2: Using existing script: %s", script_path.name)
 
     # Step 3: Generate audio (Pass the provider here)
-    print("\nStep 3: Generating audio...")
+    logger.info("Step 3: Generating audio...")
     audio_dir = script_path.parent / f"{script_path.stem}_audio"
     generate_audio(script_path, output_dir=audio_dir, voice=voice, provider=provider) # Use your provider
 
     # Step 4: Generate video
-    print("\nStep 4: Creating video...")
+    logger.info("Step 4: Creating video...")
     if output_path is None:
         output_path = pdf_path.parent / f"{base_name}_video.mp4"
 

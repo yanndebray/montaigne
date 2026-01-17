@@ -6,6 +6,9 @@ import sys
 from pathlib import Path
 
 from . import __version__
+from .logging import setup_logging, get_logger
+
+logger = get_logger(__name__)
 
 
 def resolve_context(context_values: list) -> str:
@@ -48,12 +51,12 @@ def cmd_setup(args):
     """Install dependencies and verify configuration."""
     from .config import check_dependencies, install_dependencies
 
-    print("=== Montaigne Setup ===\n")
+    logger.info("=== Montaigne Setup ===")
 
     if not check_dependencies():
         install_dependencies()
     else:
-        print("All dependencies installed.")
+        logger.info("All dependencies installed.")
 
     # Verify API key
     from dotenv import load_dotenv
@@ -62,12 +65,12 @@ def cmd_setup(args):
 
     api_key = os.environ.get("GEMINI_API_KEY")
     if api_key:
-        print(f"API Key: {'*' * 10}{api_key[-4:]}")
+        logger.info("API Key: %s%s", "*" * 10, api_key[-4:])
     else:
-        print("Warning: GEMINI_API_KEY not found in .env file")
-        print("Create a .env file with: GEMINI_API_KEY=your-api-key")
+        logger.warning("GEMINI_API_KEY not found in .env file")
+        logger.warning("Create a .env file with: GEMINI_API_KEY=your-api-key")
 
-    print("\nSetup complete!")
+    logger.info("Setup complete!")
 
 
 def cmd_pdf(args):
@@ -76,10 +79,10 @@ def cmd_pdf(args):
     from .pdf import extract_pdf_pages
 
     if not check_dependencies():
-        print("Dependencies not installed. Run: essai setup")
+        logger.error("Dependencies not installed. Run: essai setup")
         sys.exit(1)
 
-    print("=== PDF Extraction ===")
+    logger.info("=== PDF Extraction ===")
 
     pdf_path = Path(args.input)
     output_dir = Path(args.output) if args.output else None
@@ -93,10 +96,10 @@ def cmd_script(args):
     from .scripts import generate_scripts
 
     if not check_dependencies():
-        print("Dependencies not installed. Run: essai setup")
+        logger.error("Dependencies not installed. Run: essai setup")
         sys.exit(1)
 
-    print("=== Script Generation ===")
+    logger.info("=== Script Generation ===")
 
     input_path = Path(args.input) if args.input else None
 
@@ -106,14 +109,14 @@ def cmd_script(args):
         pdfs = list(cwd.glob("*.pdf"))
         if pdfs:
             input_path = pdfs[0]
-            print(f"Auto-detected: {input_path.name}")
+            logger.info("Auto-detected: %s", input_path.name)
         else:
             image_dirs = [d for d in cwd.iterdir() if d.is_dir() and "images" in d.name.lower()]
             if image_dirs:
                 input_path = image_dirs[0]
-                print(f"Auto-detected: {input_path.name}")
+                logger.info("Auto-detected: %s", input_path.name)
             else:
-                print("No PDF or image folder found. Use --input to specify one.")
+                logger.error("No PDF or image folder found. Use --input to specify one.")
                 return
 
     output_path = Path(args.output) if args.output else None
@@ -126,18 +129,17 @@ def cmd_audio(args):
     """Generate audio from voiceover scripts."""
     from .config import check_dependencies
     from .audio import generate_audio
-    
+
     if args.list_voices:
         from .audio import list_voices
         list_voices(provider=args.provider)
         return # Stop execution here
 
     if not check_dependencies():
-        print("Dependencies not installed. Run: essai setup")
+        logger.error("Dependencies not installed. Run: essai setup")
         sys.exit(1)
-    
 
-    print("=== Audio Generation ===")
+    logger.info("=== Audio Generation ===")
 
     script_path = Path(args.script) if args.script else None
 
@@ -147,9 +149,9 @@ def cmd_audio(args):
         scripts = list(cwd.glob("*voiceover*.md"))
         if scripts:
             script_path = scripts[0]
-            print(f"Auto-detected: {script_path.name}")
+            logger.info("Auto-detected: %s", script_path.name)
         else:
-            print("No voiceover script found. Use --script to specify one.")
+            logger.error("No voiceover script found. Use --script to specify one.")
             return
 
     output_dir = Path(args.output) if args.output else None
@@ -168,10 +170,10 @@ def cmd_images(args):
     from .images import translate_images
 
     if not check_dependencies():
-        print("Dependencies not installed. Run: essai setup")
+        logger.error("Dependencies not installed. Run: essai setup")
         sys.exit(1)
 
-    print("=== Image Translation ===")
+    logger.info("=== Image Translation ===")
 
     input_path = Path(args.input) if args.input else None
 
@@ -181,9 +183,9 @@ def cmd_images(args):
         images = list(cwd.glob("*.png")) + list(cwd.glob("*.jpg"))
         if images:
             input_path = images[0]
-            print(f"Auto-detected: {input_path.name}")
+            logger.info("Auto-detected: %s", input_path.name)
         else:
-            print("No images found. Use --input to specify image or folder.")
+            logger.error("No images found. Use --input to specify image or folder.")
             return
 
     output_dir = Path(args.output) if args.output else None
@@ -195,13 +197,13 @@ def cmd_video(args):
     from .video import generate_video, generate_video_from_pdf, check_ffmpeg
 
     if not check_ffmpeg():
-        print("Error: ffmpeg not found. Please install ffmpeg to generate videos.")
-        print("  Windows: choco install ffmpeg  or  winget install ffmpeg")
-        print("  macOS: brew install ffmpeg")
-        print("  Linux: sudo apt install ffmpeg")
+        logger.error("ffmpeg not found. Please install ffmpeg to generate videos.")
+        logger.error("  Windows: choco install ffmpeg  or  winget install ffmpeg")
+        logger.error("  macOS: brew install ffmpeg")
+        logger.error("  Linux: sudo apt install ffmpeg")
         sys.exit(1)
 
-    print("=== Video Generation ===")
+    logger.info("=== Video Generation ===")
 
     # If PDF provided, run full pipeline
     if args.pdf:
@@ -230,9 +232,9 @@ def cmd_video(args):
         image_dirs = [d for d in cwd.iterdir() if d.is_dir() and "_images" in d.name]
         if image_dirs:
             images_dir = image_dirs[0]
-            print(f"Auto-detected images: {images_dir.name}")
+            logger.info("Auto-detected images: %s", images_dir.name)
         else:
-            print("No images directory found. Use --images to specify one.")
+            logger.error("No images directory found. Use --images to specify one.")
             return
 
     if audio_dir is None:
@@ -240,9 +242,9 @@ def cmd_video(args):
         audio_dirs = [d for d in cwd.iterdir() if d.is_dir() and "_audio" in d.name]
         if audio_dirs:
             audio_dir = audio_dirs[0]
-            print(f"Auto-detected audio: {audio_dir.name}")
+            logger.info("Auto-detected audio: %s", audio_dir.name)
         else:
-            print("No audio directory found. Use --audio to specify one.")
+            logger.error("No audio directory found. Use --audio to specify one.")
             return
 
     output_path = Path(args.output) if args.output else None
@@ -256,10 +258,10 @@ def cmd_ppt(args):
     from .ppt import create_pptx
 
     if not check_dependencies():
-        print("Dependencies not installed. Run: essai setup")
+        logger.error("Dependencies not installed. Run: essai setup")
         sys.exit(1)
 
-    print("=== PowerPoint Generation ===")
+    logger.info("=== PowerPoint Generation ===")
 
     input_path = Path(args.input) if args.input else None
 
@@ -270,15 +272,15 @@ def cmd_ppt(args):
         pdfs = list(cwd.glob("*.pdf"))
         if pdfs:
             input_path = pdfs[0]
-            print(f"Auto-detected PDF: {input_path.name}")
+            logger.info("Auto-detected PDF: %s", input_path.name)
         else:
             # Try to find an images folder
             image_dirs = [d for d in cwd.iterdir() if d.is_dir() and "images" in d.name.lower()]
             if image_dirs:
                 input_path = image_dirs[0]
-                print(f"Auto-detected folder: {input_path.name}")
+                logger.info("Auto-detected folder: %s", input_path.name)
             else:
-                print("No PDF or images folder found. Use --input to specify one.")
+                logger.error("No PDF or images folder found. Use --input to specify one.")
                 return
 
     output_path = Path(args.output) if args.output else None
@@ -290,7 +292,7 @@ def cmd_ppt(args):
         scripts = list(cwd.glob("*voiceover*.md"))
         if scripts:
             script_path = scripts[0]
-            print(f"Auto-detected script: {script_path.name}")
+            logger.info("Auto-detected script: %s", script_path.name)
 
     create_pptx(
         input_path,
@@ -308,12 +310,12 @@ def cmd_webapp(args):
     try:
         import streamlit  # noqa: F401
     except ImportError:
-        print("Streamlit not installed. Install with:")
-        print("  pip install montaigne[webapp]")
+        logger.error("Streamlit not installed. Install with:")
+        logger.error("  pip install montaigne[webapp]")
         sys.exit(1)
 
-    print("=== Launching Montaigne Web App ===")
-    print("Opening in browser...\n")
+    logger.info("=== Launching Montaigne Web App ===")
+    logger.info("Opening in browser...")
 
     # Get the path to app.py
     app_path = Path(__file__).parent / "app.py"
@@ -332,22 +334,22 @@ def cmd_cloud_health(args):
     from .cloud_config import get_api_url
 
     api_url = args.api_url or get_api_url()
-    print(f"Checking cloud API: {api_url}")
+    logger.info("Checking cloud API: %s", api_url)
 
     try:
         response = requests.get(f"{api_url}/health", timeout=10)
         response.raise_for_status()
         data = response.json()
 
-        print(f"\nStatus: {data.get('status', 'unknown')}")
-        print(f"Version: {data.get('version', 'unknown')}")
-        print(f"FFmpeg: {'available' if data.get('ffmpeg') else 'not available'}")
+        logger.info("Status: %s", data.get("status", "unknown"))
+        logger.info("Version: %s", data.get("version", "unknown"))
+        logger.info("FFmpeg: %s", "available" if data.get("ffmpeg") else "not available")
     except requests.exceptions.ConnectionError:
-        print(f"\nError: Could not connect to {api_url}")
-        print("Make sure the cloud API is deployed and the URL is correct.")
+        logger.error("Could not connect to %s", api_url)
+        logger.error("Make sure the cloud API is deployed and the URL is correct.")
         sys.exit(1)
     except Exception as e:
-        print(f"\nError: {e}")
+        logger.error("Error: %s", e)
         sys.exit(1)
 
 
@@ -361,15 +363,15 @@ def cmd_cloud_video(args):
     pdf_path = Path(args.pdf)
 
     if not pdf_path.exists():
-        print(f"Error: PDF file not found: {pdf_path}")
+        logger.error("PDF file not found: %s", pdf_path)
         sys.exit(1)
 
-    print(f"=== Cloud Video Generation ===")
-    print(f"API: {api_url}")
-    print(f"PDF: {pdf_path.name}")
+    logger.info("=== Cloud Video Generation ===")
+    logger.info("API: %s", api_url)
+    logger.info("PDF: %s", pdf_path.name)
 
     # Step 1: Get upload URL
-    print("\nStep 1: Requesting upload URL...")
+    logger.info("Step 1: Requesting upload URL...")
     response = requests.post(
         f"{api_url}/jobs/upload-url",
         json={
@@ -381,10 +383,10 @@ def cmd_cloud_video(args):
     response.raise_for_status()
     upload_data = response.json()
     job_id = upload_data["job_id"]
-    print(f"Job ID: {job_id}")
+    logger.info("Job ID: %s", job_id)
 
     # Step 2: Upload PDF
-    print(f"\nStep 2: Uploading {pdf_path.name}...")
+    logger.info("Step 2: Uploading %s...", pdf_path.name)
     with open(pdf_path, "rb") as f:
         upload_response = requests.put(
             upload_data["upload_url"],
@@ -392,10 +394,10 @@ def cmd_cloud_video(args):
             headers={"Content-Type": "application/pdf"},
         )
         upload_response.raise_for_status()
-    print("Upload complete.")
+    logger.info("Upload complete.")
 
     # Step 3: Start processing
-    print("\nStep 3: Starting video generation...")
+    logger.info("Step 3: Starting video generation...")
     response = requests.post(
         f"{api_url}/jobs/{job_id}/start",
         json={
@@ -408,14 +410,14 @@ def cmd_cloud_video(args):
     response.raise_for_status()
 
     if not args.wait:
-        print(f"\nJob submitted. Check status with:")
-        print(f"  essai cloud status {job_id}")
-        print(f"\nDownload when complete with:")
-        print(f"  essai cloud download {job_id} -o output.mp4")
+        logger.info("Job submitted. Check status with:")
+        logger.info("  essai cloud status %s", job_id)
+        logger.info("Download when complete with:")
+        logger.info("  essai cloud download %s -o output.mp4", job_id)
         return
 
     # Step 4: Wait for completion
-    print("\nStep 4: Processing...")
+    logger.info("Step 4: Processing...")
     last_message = ""
     while True:
         response = requests.get(f"{api_url}/jobs/{job_id}/status")
@@ -427,21 +429,21 @@ def cmd_cloud_video(args):
         message = progress.get("message", "")
 
         if message != last_message:
-            print(f"  {message}")
+            logger.info("  %s", message)
             last_message = message
 
         if status == "completed":
             break
         elif status == "failed":
             error = status_data.get("error", {})
-            print(f"\nError: {error.get('message', 'Unknown error')}")
+            logger.error("Error: %s", error.get("message", "Unknown error"))
             sys.exit(1)
 
         time.sleep(2)
 
     # Step 5: Download video
     output_path = Path(args.output) if args.output else Path(f"{pdf_path.stem}_video.mp4")
-    print(f"\nStep 5: Downloading video to {output_path}...")
+    logger.info("Step 5: Downloading video to %s...", output_path)
 
     response = requests.get(f"{api_url}/jobs/{job_id}/download?file=video")
     response.raise_for_status()
@@ -455,7 +457,7 @@ def cmd_cloud_video(args):
             f.write(chunk)
 
     size_mb = output_path.stat().st_size / (1024 * 1024)
-    print(f"\nComplete! Video saved to: {output_path} ({size_mb:.1f} MB)")
+    logger.info("Complete! Video saved to: %s (%.1f MB)", output_path, size_mb)
 
 
 def cmd_cloud_status(args):
@@ -468,44 +470,44 @@ def cmd_cloud_status(args):
     response = requests.get(f"{api_url}/jobs/{args.job_id}/status")
 
     if response.status_code == 404:
-        print(f"Job not found: {args.job_id}")
+        logger.error("Job not found: %s", args.job_id)
         sys.exit(1)
 
     response.raise_for_status()
     data = response.json()
 
-    print(f"Job ID: {data.get('job_id')}")
-    print(f"Status: {data.get('status')}")
-    print(f"Pipeline: {data.get('pipeline', 'unknown')}")
+    logger.info("Job ID: %s", data.get("job_id"))
+    logger.info("Status: %s", data.get("status"))
+    logger.info("Pipeline: %s", data.get("pipeline", "unknown"))
 
     if data.get("progress"):
         progress = data["progress"]
-        print(f"\nProgress:")
-        print(f"  Step: {progress.get('step')}")
+        logger.info("Progress:")
+        logger.info("  Step: %s", progress.get("step"))
         if progress.get("current") is not None:
-            print(f"  Progress: {progress.get('current')}/{progress.get('total')}")
+            logger.info("  Progress: %s/%s", progress.get("current"), progress.get("total"))
         if progress.get("message"):
-            print(f"  Message: {progress.get('message')}")
+            logger.info("  Message: %s", progress.get("message"))
 
     if data.get("created_at"):
-        print(f"\nCreated: {data.get('created_at')}")
+        logger.info("Created: %s", data.get("created_at"))
     if data.get("started_at"):
-        print(f"Started: {data.get('started_at')}")
+        logger.info("Started: %s", data.get("started_at"))
     if data.get("completed_at"):
-        print(f"Completed: {data.get('completed_at')}")
+        logger.info("Completed: %s", data.get("completed_at"))
 
     if data.get("output"):
         output = data["output"]
-        print(f"\nOutput:")
+        logger.info("Output:")
         if output.get("video_size_bytes"):
             size_mb = output["video_size_bytes"] / (1024 * 1024)
-            print(f"  Video size: {size_mb:.1f} MB")
+            logger.info("  Video size: %.1f MB", size_mb)
         if output.get("download_expires"):
-            print(f"  Download expires: {output['download_expires']}")
+            logger.info("  Download expires: %s", output["download_expires"])
 
     if data.get("error"):
         error = data["error"]
-        print(f"\nError: {error.get('message')}")
+        logger.error("Error: %s", error.get("message"))
 
 
 def cmd_cloud_download(args):
@@ -516,22 +518,22 @@ def cmd_cloud_download(args):
     api_url = args.api_url or get_api_url()
     output_path = Path(args.output)
 
-    print(f"Downloading {args.file} from job {args.job_id}...")
+    logger.info("Downloading %s from job %s...", args.file, args.job_id)
 
     response = requests.get(f"{api_url}/jobs/{args.job_id}/download?file={args.file}")
 
     if response.status_code == 404:
-        print(f"Job or file not found: {args.job_id}")
+        logger.error("Job or file not found: %s", args.job_id)
         sys.exit(1)
     elif response.status_code == 400:
-        print(f"Job not completed yet. Check status with: essai cloud status {args.job_id}")
+        logger.error("Job not completed yet. Check status with: essai cloud status %s", args.job_id)
         sys.exit(1)
 
     response.raise_for_status()
     download_data = response.json()
 
-    print(f"File size: {download_data['size_bytes'] / (1024 * 1024):.1f} MB")
-    print(f"Downloading to: {output_path}")
+    logger.info("File size: %.1f MB", download_data["size_bytes"] / (1024 * 1024))
+    logger.info("Downloading to: %s", output_path)
 
     file_response = requests.get(download_data["download_url"], stream=True)
     file_response.raise_for_status()
@@ -541,7 +543,7 @@ def cmd_cloud_download(args):
         for chunk in file_response.iter_content(chunk_size=8192):
             f.write(chunk)
 
-    print(f"Download complete: {output_path}")
+    logger.info("Download complete: %s", output_path)
 
 
 def cmd_cloud_jobs(args):
@@ -561,14 +563,14 @@ def cmd_cloud_jobs(args):
 
     jobs = data.get("jobs", [])
     if not jobs:
-        print("No jobs found.")
+        logger.info("No jobs found.")
         return
 
-    print(f"{'Job ID':<30} {'Status':<12} {'Pipeline':<10} {'Created'}")
-    print("-" * 80)
+    logger.info("%-30s %-12s %-10s %s", "Job ID", "Status", "Pipeline", "Created")
+    logger.info("-" * 80)
     for job in jobs:
         created = job.get("created_at", "")[:19] if job.get("created_at") else ""
-        print(f"{job['job_id']:<30} {job.get('status', ''):<12} {job.get('pipeline', ''):<10} {created}")
+        logger.info("%-30s %-12s %-10s %s", job["job_id"], job.get("status", ""), job.get("pipeline", ""), created)
 
 
 def cmd_localize(args):
@@ -586,10 +588,10 @@ def cmd_localize(args):
     from .audio import generate_audio
 
     if not check_dependencies():
-        print("Dependencies not installed. Run: essai setup")
+        logger.error("Dependencies not installed. Run: essai setup")
         sys.exit(1)
 
-    print("=== Montaigne Localization Pipeline ===\n")
+    logger.info("=== Montaigne Localization Pipeline ===")
 
     project_dir = Path.cwd()
     output_base = (
@@ -602,26 +604,24 @@ def cmd_localize(args):
     # Step 1: Extract PDF if provided
     if args.pdf:
         pdf_path = Path(args.pdf)
-        print("Step 1: Extracting PDF pages...")
+        logger.info("Step 1: Extracting PDF pages...")
         images_dir = output_base / "source_images"
         extracted = extract_pdf_pages(pdf_path, output_dir=images_dir, dpi=args.dpi)
         images_to_translate = extracted
-        print()
     elif args.images:
         images_to_translate = [Path(args.images)]
     else:
         # Auto-detect PDF or images
         pdfs = list(project_dir.glob("*.pdf"))
         if pdfs:
-            print(f"Step 1: Auto-detected PDF: {pdfs[0].name}")
+            logger.info("Step 1: Auto-detected PDF: %s", pdfs[0].name)
             images_dir = output_base / "source_images"
             extracted = extract_pdf_pages(pdfs[0], output_dir=images_dir, dpi=args.dpi)
             images_to_translate = extracted
-            print()
 
     # Step 2: Translate images
     if images_to_translate:
-        print(f"Step 2: Translating images to {args.lang}...")
+        logger.info("Step 2: Translating images to %s...", args.lang)
         if isinstance(images_to_translate, list) and len(images_to_translate) > 0:
             # If we have a list from PDF extraction, use the parent dir
             source_dir = images_to_translate[0].parent
@@ -630,11 +630,10 @@ def cmd_localize(args):
 
         translated_dir = output_base / "translated_images"
         translate_images(source_dir, output_dir=translated_dir, target_lang=args.lang)
-        print()
 
     # Step 3: Generate audio if script provided
     if args.script:
-        print("Step 3: Generating audio...")
+        logger.info("Step 3: Generating audio...")
         script_path = Path(args.script)
         audio_dir = output_base / "audio"
         generate_audio(script_path, output_dir=audio_dir, voice=args.voice, provider=args.provider)
@@ -642,12 +641,12 @@ def cmd_localize(args):
         # Auto-detect voiceover script
         scripts = list(project_dir.glob("*voiceover*.md"))
         if scripts:
-            print(f"Step 3: Auto-detected script: {scripts[0].name}")
+            logger.info("Step 3: Auto-detected script: %s", scripts[0].name)
             audio_dir = output_base / "audio"
             generate_audio(scripts[0], output_dir=audio_dir, voice=args.voice, provider=args.provider)
 
-    print("\n=== Localization Complete ===")
-    print(f"Output: {output_base}/")
+    logger.info("=== Localization Complete ===")
+    logger.info("Output: %s/", output_base)
 
 
 def main():
@@ -682,6 +681,15 @@ One-command video:
         """,
     )
     parser.add_argument("--version", action="version", version=f"montaigne {__version__}")
+    parser.add_argument(
+        "--verbose", "-v", action="store_true", help="Show debug output"
+    )
+    parser.add_argument(
+        "--quiet", "-q", action="store_true", help="Show only errors"
+    )
+    parser.add_argument(
+        "--log-file", metavar="FILE", help="Write logs to file"
+    )
 
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
@@ -875,6 +883,13 @@ Environment:
     )
 
     args = parser.parse_args()
+
+    # Setup logging based on flags
+    setup_logging(
+        verbose=getattr(args, "verbose", False),
+        quiet=getattr(args, "quiet", False),
+        log_file=getattr(args, "log_file", None),
+    )
 
     if args.command is None:
         parser.print_help()

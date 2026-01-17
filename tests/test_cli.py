@@ -40,7 +40,9 @@ class TestSetupCommand:
                         main()
 
         captured = capsys.readouterr()
-        assert "Setup" in captured.out or "dependencies" in captured.out.lower()
+        # Logging goes to stderr
+        output = captured.out + captured.err
+        assert "Setup" in output or "dependencies" in output.lower()
 
 
 class TestPdfCommand:
@@ -188,7 +190,9 @@ class TestVideoCommand:
                 assert exc_info.value.code == 1
 
         captured = capsys.readouterr()
-        assert "ffmpeg" in captured.out.lower()
+        # Logging goes to stderr
+        output = captured.out + captured.err
+        assert "ffmpeg" in output.lower()
 
     def test_video_with_pdf_runs_pipeline(self, temp_dir):
         """Video command with --pdf runs full pipeline."""

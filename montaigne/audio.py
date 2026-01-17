@@ -7,7 +7,10 @@ import sys
 from pathlib import Path
 from typing import List, Dict, Optional
 
-from .config import get_gemini_client,get_elevenlabs_client
+from .config import get_gemini_client, get_elevenlabs_client
+from .logging import get_logger
+
+logger = get_logger(__name__)
 from .elevenlabs_tts import generate_slide_audio_elevenlabs, ELEVENLABS_VOICES
 # Available Gemini TTS voices
 VOICES = ["Puck", "Charon", "Kore", "Fenrir", "Aoede", "Orus"]
@@ -195,13 +198,13 @@ def generate_slide_audio(
 def list_voices(provider: str = "gemini"):
     """List available voices for the selected provider."""
     if provider.lower() == "elevenlabs":
-        print("\nAvailable ElevenLabs Voices:")
+        logger.info("Available ElevenLabs Voices:")
         for name in ELEVENLABS_VOICES.keys():
-            print(f" - {name}")
+            logger.info(" - %s", name)
     else:
-        print("\nAvailable Gemini Voices:")
+        logger.info("Available Gemini Voices:")
         for name in VOICES:
-            print(f" - {name}")
+            logger.info(" - %s", name)
 
 def generate_audio(
     script_path: Path, 
@@ -216,9 +219,9 @@ def generate_audio(
 
     output_dir.mkdir(parents=True, exist_ok=True)
     slides = parse_voiceover_script(script_path)
-    
-    print(f"\nFound {len(slides)} slides in {script_path.name}")
-    print(f"Using Provider: {provider.upper()}")
+
+    logger.info("Found %d slides in %s", len(slides), script_path.name)
+    logger.info("Using Provider: %s", provider.upper())
 
     is_eleven = provider.lower() == "elevenlabs"
     client = get_elevenlabs_client() if is_eleven else get_gemini_client()
@@ -257,8 +260,10 @@ def generate_audio(
             generated_files.append(output_path)
         except Exception as e:
             msg = f"Error on Slide {slide['number']}: {e}"
-            if use_tqdm: tqdm.write(msg)
-            else: print(msg)
+            if use_tqdm:
+                tqdm.write(msg)
+            else:
+                logger.error(msg)
 
-    print(f"\nSuccess! Generated {len(generated_files)} files in {output_dir}/")
+    logger.info("Success! Generated %d files in %s/", len(generated_files), output_dir)
     return generated_files

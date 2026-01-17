@@ -4,6 +4,10 @@ import sys
 from pathlib import Path
 from typing import List, Optional
 
+from .logging import get_logger
+
+logger = get_logger(__name__)
+
 
 def extract_pdf_pages(
     pdf_path: Path, output_dir: Optional[Path] = None, dpi: int = 150, image_format: str = "png"
@@ -32,7 +36,7 @@ def extract_pdf_pages(
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    print(f"Extracting pages from: {pdf_path.name}")
+    logger.info("Extracting pages from: %s", pdf_path.name)
 
     doc = fitz.open(pdf_path)
     extracted_images = []
@@ -71,11 +75,11 @@ def extract_pdf_pages(
 
         extracted_images.append(output_path)
         if not use_tqdm:
-            print(f"  Extracted: page_{page_num + 1:03d}{ext}")
+            logger.info("  Extracted: page_%03d%s", page_num + 1, ext)
 
     doc.close()
 
-    print(f"Extracted {len(extracted_images)} pages to {output_dir}/")
+    logger.info("Extracted %d pages to %s/", len(extracted_images), output_dir)
     return extracted_images
 
 

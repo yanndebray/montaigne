@@ -4,6 +4,10 @@ import re
 from pathlib import Path
 from typing import List, Optional
 
+from .logging import get_logger
+
+logger = get_logger(__name__)
+
 IMAGE_EXTENSIONS = {".jpeg", ".jpg", ".png", ".gif", ".webp", ".bmp", ".tiff"}
 
 
@@ -78,7 +82,7 @@ def images_to_pptx(
     for i, image_path in enumerate(images):
         image_path = Path(image_path)
         if not image_path.exists():
-            print(f"  Warning: Image not found, skipping: {image_path}")
+            logger.warning("Image not found, skipping: %s", image_path)
             continue
 
         slide = prs.slides.add_slide(blank_layout)
@@ -112,7 +116,7 @@ def images_to_pptx(
             notes_slide = slide.notes_slide
             notes_slide.notes_text_frame.text = notes[i]
 
-        print(f"  Added slide {i + 1}: {image_path.name}")
+        logger.info("Added slide %d: %s", i + 1, image_path.name)
 
     prs.save(output_path)
     return output_path
@@ -152,7 +156,7 @@ def pdf_to_pptx(
         output_path = pdf_path.parent / f"{pdf_path.stem}.pptx"
     output_path = Path(output_path)
 
-    print(f"Converting PDF to PowerPoint: {pdf_path.name}")
+    logger.info("Converting PDF to PowerPoint: %s", pdf_path.name)
 
     # Extract PDF pages to temporary directory or keep
     if keep_images:
@@ -167,13 +171,13 @@ def pdf_to_pptx(
         notes = None
         if script_path:
             script_path = Path(script_path)
-            print(f"Parsing script for notes: {script_path.name}")
+            logger.info("Parsing script for notes: %s", script_path.name)
             notes = parse_script_to_slides(script_path)
             if len(notes) != len(images):
-                print(f"  Warning: Script has {len(notes)} slides but PDF has {len(images)} pages")
+                logger.warning("Script has %d slides but PDF has %d pages", len(notes), len(images))
 
         # Create PowerPoint
-        print(f"\nCreating PowerPoint with {len(images)} slides...")
+        logger.info("Creating PowerPoint with %d slides...", len(images))
         images_to_pptx(images, output_path, notes=notes)
 
     finally:
@@ -181,7 +185,7 @@ def pdf_to_pptx(
         if not keep_images and images_dir.exists():
             shutil.rmtree(images_dir)
 
-    print(f"\nCreated: {output_path}")
+    logger.info("Created: %s", output_path)
     return output_path
 
 
@@ -217,22 +221,22 @@ def folder_to_pptx(
         output_path = folder_path.parent / f"{folder_path.name}.pptx"
     output_path = Path(output_path)
 
-    print(f"Creating PowerPoint from {len(images)} images in: {folder_path.name}")
+    logger.info("Creating PowerPoint from %d images in: %s", len(images), folder_path.name)
 
     # Parse script if provided
     notes = None
     if script_path:
         script_path = Path(script_path)
-        print(f"Parsing script for notes: {script_path.name}")
+        logger.info("Parsing script for notes: %s", script_path.name)
         notes = parse_script_to_slides(script_path)
         if len(notes) != len(images):
-            print(f"  Warning: Script has {len(notes)} slides but folder has {len(images)} images")
+            logger.warning("Script has %d slides but folder has %d images", len(notes), len(images))
 
     # Create PowerPoint
-    print(f"\nCreating PowerPoint with {len(images)} slides...")
+    logger.info("Creating PowerPoint with %d slides...", len(images))
     images_to_pptx(images, output_path, notes=notes)
 
-    print(f"\nCreated: {output_path}")
+    logger.info("Created: %s", output_path)
     return output_path
 
 
