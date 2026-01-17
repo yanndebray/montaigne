@@ -7,12 +7,23 @@ import sys
 from pathlib import Path
 from typing import List, Dict, Optional
 
-from .config import get_gemini_client
-
+from .config import get_gemini_client,get_elevenlabs_client
+from .elevenlabs_tts import generate_slide_audio_elevenlabs, ELEVENLABS_VOICES
 # Available Gemini TTS voices
 VOICES = ["Puck", "Charon", "Kore", "Fenrir", "Aoede", "Orus"]
 DEFAULT_VOICE = "Orus"
 TTS_MODEL = "gemini-2.5-pro-preview-tts"
+
+# ElevenLabs constants
+ELEVENLABS_MODEL_ID = "eleven_multilingual_v2"
+ELEVENLABS_VOICES = {
+    "adam": "6FiCmD8eY5VyjOdG5Zjk",
+    "bob": "3nzyRCzDIWOtbkzj2qvj",
+    "william": "8Es4wFxsDlHBmFWAOWRS",
+    "george": "JBFqnCBsd6RMkjVDRZzb" # default
+}
+
+ELEVENLABS_VOICE_ID = ELEVENLABS_VOICES["george"] #default
 
 
 def parse_voiceover_script(script_path: Path) -> List[Dict]:
@@ -152,30 +163,13 @@ def _convert_to_wav(audio_data: bytes, mime_type: str) -> bytes:
 def generate_slide_audio(
     text: str, output_path: Path, voice: str = DEFAULT_VOICE, client=None
 ) -> Path:
-    """
-    Generate audio for a single text using Gemini TTS.
-
-    Args:
-        text: Text to convert to speech
-        output_path: Where to save the audio file
-        voice: Voice name (default: Orus)
-        client: Optional pre-configured Gemini client
-
-    Returns:
-        Path to generated audio file
-    """
+    """Generate audio for a single text using Gemini TTS (.wav)."""
     from google.genai import types
 
     if client is None:
         client = get_gemini_client()
 
-    contents = [
-        types.Content(
-            role="user",
-            parts=[types.Part.from_text(text=text)],
-        ),
-    ]
-
+    contents = [types.Content(role="user", parts=[types.Part.from_text(text=text)])]
     config = types.GenerateContentConfig(
         temperature=1,
         response_modalities=["audio"],
@@ -186,83 +180,85 @@ def generate_slide_audio(
         ),
     )
 
-    for chunk in client.models.generate_content_stream(
-        model=TTS_MODEL,
-        contents=contents,
-        config=config,
-    ):
-        if (
-            chunk.candidates is None
-            or chunk.candidates[0].content is None
-            or chunk.candidates[0].content.parts is None
-        ):
-            continue
+    for chunk in client.models.generate_content_stream(model=TTS_MODEL, contents=contents, config=config):
+        if chunk.candidates and chunk.candidates[0].content and chunk.candidates[0].content.parts:
+            part = chunk.candidates[0].content.parts[0]
+            if part.inline_data and part.inline_data.data:
+                # Add WAV header to the Gemini PCM data
+                data_buffer = _convert_to_wav(part.inline_data.data, part.inline_data.mime_type)
+                with open(output_path, "wb") as f:
+                    f.write(data_buffer)
+                return output_path
 
-        part = chunk.candidates[0].content.parts[0]
-        if part.inline_data and part.inline_data.data:
-            inline_data = part.inline_data
-            data_buffer = _convert_to_wav(inline_data.data, inline_data.mime_type)
+    raise RuntimeError("No audio data received from Gemini API")
 
-            with open(output_path, "wb") as f:
-                f.write(data_buffer)
-            return output_path
-
-    raise RuntimeError("No audio data received from API")
-
+def list_voices(provider: str = "gemini"):
+    """List available voices for the selected provider."""
+    if provider.lower() == "elevenlabs":
+        print("\nAvailable ElevenLabs Voices:")
+        for name in ELEVENLABS_VOICES.keys():
+            print(f" - {name}")
+    else:
+        print("\nAvailable Gemini Voices:")
+        for name in VOICES:
+            print(f" - {name}")
 
 def generate_audio(
-    script_path: Path, output_dir: Optional[Path] = None, voice: str = DEFAULT_VOICE
+    script_path: Path, 
+    output_dir: Optional[Path] = None, 
+    voice: Optional[str] = None,
+    provider: str = "gemini"
 ) -> List[Path]:
-    """
-    Generate audio for all slides in a voiceover script.
-
-    Args:
-        script_path: Path to markdown voiceover script
-        output_dir: Directory for output (default: {script_stem}_audio/)
-        voice: TTS voice name
-
-    Returns:
-        List of paths to generated audio files
-    """
+    """Main entry point to generate audio for a full script."""
     script_path = Path(script_path)
-
     if output_dir is None:
         output_dir = script_path.parent / f"{script_path.stem}_audio"
 
-    output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
-
     slides = parse_voiceover_script(script_path)
+    
     print(f"\nFound {len(slides)} slides in {script_path.name}")
+    print(f"Using Provider: {provider.upper()}")
 
-    client = get_gemini_client()
+    is_eleven = provider.lower() == "elevenlabs"
+    client = get_elevenlabs_client() if is_eleven else get_gemini_client()
+    
+    # Default voice logic
+    active_voice = voice or ("george" if is_eleven else DEFAULT_VOICE)
+    extension = "wav" # Always wav per Acceptance Criteria
     generated_files = []
 
-    # Use tqdm for progress bar if available in TTY environment
     try:
         from tqdm import tqdm
-
         use_tqdm = sys.stderr.isatty()
     except ImportError:
         use_tqdm = False
 
-    slide_iterator = slides
-    if use_tqdm:
-        slide_iterator = tqdm(slides, desc="Generating audio", unit="slide")
+    slide_iterator = tqdm(slides, desc=f"Generating {provider} audio") if use_tqdm else slides
 
     for slide in slide_iterator:
-        if not use_tqdm:
-            print(f"  Generating audio for Slide {slide['number']}: {slide['title'][:40]}...")
-
         try:
-            output_path = output_dir / f"slide_{slide['number']:02d}.wav"
-            generate_slide_audio(slide["text"], output_path, voice=voice, client=client)
+            output_path = output_dir / f"slide_{slide['number']:02d}.{extension}"
+            
+            if is_eleven:
+                generate_slide_audio_elevenlabs(
+                    slide["text"], 
+                    output_path, 
+                    voice=active_voice, 
+                    client=client
+                )
+            else:
+                generate_slide_audio(
+                    slide["text"], 
+                    output_path, 
+                    voice=active_voice, 
+                    client=client
+                )
             generated_files.append(output_path)
-            if not use_tqdm:
-                print(f"    Saved: {output_path.name}")
         except Exception as e:
-            if not use_tqdm:
-                print(f"    Error: {e}")
+            msg = f"Error on Slide {slide['number']}: {e}"
+            if use_tqdm: tqdm.write(msg)
+            else: print(msg)
 
-    print(f"\nGenerated {len(generated_files)} audio files in {output_dir}/")
+    print(f"\nSuccess! Generated {len(generated_files)} files in {output_dir}/")
     return generated_files

@@ -90,10 +90,16 @@ def cmd_audio(args):
     """Generate audio from voiceover scripts."""
     from .config import check_dependencies
     from .audio import generate_audio
+    
+    if args.list_voices:
+        from .audio import list_voices
+        list_voices(provider=args.provider)
+        return # Stop execution here
 
     if not check_dependencies():
         print("Dependencies not installed. Run: essai setup")
         sys.exit(1)
+    
 
     print("=== Audio Generation ===")
 
@@ -111,7 +117,13 @@ def cmd_audio(args):
             return
 
     output_dir = Path(args.output) if args.output else None
-    generate_audio(script_path, output_dir=output_dir, voice=args.voice)
+    # Changed the last line of cmd_audio to include 'provider'
+    generate_audio(
+        script_path, 
+        output_dir=output_dir, 
+        voice=args.voice, 
+        provider=args.provider  # <--- Added this
+    )
 
 
 def cmd_images(args):
@@ -162,13 +174,14 @@ def cmd_video(args):
         output_path = Path(args.output) if args.output else None
 
         generate_video_from_pdf(
-            pdf_path,
-            script_path=script_path,
-            output_path=output_path,
-            resolution=args.resolution,
-            voice=args.voice,
-            context=args.context or "",
-        )
+                    pdf_path,
+                    script_path=script_path,
+                    output_path=output_path,
+                    resolution=args.resolution,
+                    voice=args.voice,
+                    provider=args.provider,       # <--- Added this
+                    context=args.context or "",   
+                )
         return
 
     # Otherwise, combine existing images and audio
@@ -588,14 +601,14 @@ def cmd_localize(args):
         print("Step 3: Generating audio...")
         script_path = Path(args.script)
         audio_dir = output_base / "audio"
-        generate_audio(script_path, output_dir=audio_dir, voice=args.voice)
+        generate_audio(script_path, output_dir=audio_dir, voice=args.voice, provider=args.provider)
     else:
         # Auto-detect voiceover script
         scripts = list(project_dir.glob("*voiceover*.md"))
         if scripts:
             print(f"Step 3: Auto-detected script: {scripts[0].name}")
             audio_dir = output_base / "audio"
-            generate_audio(scripts[0], output_dir=audio_dir, voice=args.voice)
+            generate_audio(scripts[0], output_dir=audio_dir, voice=args.voice, provider=args.provider)
 
     print("\n=== Localization Complete ===")
     print(f"Output: {output_base}/")
@@ -657,15 +670,25 @@ One-command video:
     script_parser.add_argument("--output", "-o", help="Output markdown file")
     script_parser.add_argument("--context", "-c", help="Presentation context/description")
 
-    # Audio command
+ # Audio command
     audio_parser = subparsers.add_parser("audio", help="Generate audio from voiceover script")
     audio_parser.add_argument("--script", "-s", help="Path to voiceover script")
     audio_parser.add_argument("--output", "-o", help="Output directory")
     audio_parser.add_argument(
+        "--provider",
+        choices=["gemini", "elevenlabs"],
+        default="gemini",
+        help="TTS provider to use (default: gemini)"
+    )
+    audio_parser.add_argument(
         "--voice",
-        default="Orus",
-        choices=["Puck", "Charon", "Kore", "Fenrir", "Aoede", "Orus"],
-        help="TTS voice (default: Orus)",
+        default=None,  # audio.py will handle the default (Orus or George)
+        help="Voice name: Gemini (Puck, Orus, etc.) or ElevenLabs (adam, bob, william)",
+    )
+    audio_parser.add_argument(
+    "--list-voices", 
+    action="store_true", 
+    help="List available voices for the provider"
     )
 
     # Images command
@@ -689,6 +712,7 @@ One-command video:
     loc_parser.add_argument(
         "--dpi", type=int, default=150, help="PDF extraction DPI (default: 150)"
     )
+    loc_parser.add_argument("--provider", choices=["gemini", "elevenlabs"], default="gemini")
 
     # PPT command
     ppt_parser = subparsers.add_parser("ppt", help="Create PowerPoint from PDF or images")
@@ -719,9 +743,10 @@ One-command video:
     video_parser.add_argument(
         "--voice",
         default="Orus",
-        choices=["Puck", "Charon", "Kore", "Fenrir", "Aoede", "Orus"],
-        help="TTS voice for audio generation (default: Orus)",
+        help="Voice name: Gemini (Orus, Puck, Charon, Kore, Fenrir, Aoede, etc.) or ElevenLabs (adam, bob, william)",
     )
+    # Add both here:
+    video_parser.add_argument("--provider", choices=["gemini", "elevenlabs"], default="gemini")
     video_parser.add_argument(
         "--context", "-c", help="Additional context/instructions for script generation"
     )
