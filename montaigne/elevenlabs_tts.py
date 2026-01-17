@@ -12,9 +12,34 @@ ELEVENLABS_VOICES = {
 
 ELEVENLABS_MODEL_ID = "eleven_multilingual_v2"
 
+def resolve_voice_id(voice: str, client) -> str:
+    """Resolve a voice name or ID to a voice ID.
+
+    Priority:
+    1. Preset voice names (adam, bob, william, george)
+    2. Custom voice name lookup via ElevenLabs API
+    3. Assume it's already a voice ID
+    """
+    # Check preset names first
+    if voice.lower() in ELEVENLABS_VOICES:
+        return ELEVENLABS_VOICES[voice.lower()]
+
+    # Query ElevenLabs API for custom voices by name
+    try:
+        response = client.voices.get_all()
+        for v in response.voices:
+            if v.name.lower() == voice.lower():
+                return v.voice_id
+    except Exception:
+        pass  # Fall through to treating it as a voice ID
+
+    # Assume it's already a voice ID
+    return voice
+
+
 def generate_slide_audio_elevenlabs(
-    text: str, 
-    output_path: Path, 
+    text: str,
+    output_path: Path,
     voice: str = "george",
     client=None
 ) -> Path:
@@ -22,8 +47,8 @@ def generate_slide_audio_elevenlabs(
     if client is None:
         client = get_elevenlabs_client()
 
-    # Map name to ID (case-insensitive)
-    voice_id = ELEVENLABS_VOICES.get(voice.lower(), voice)
+    # Resolve voice name to ID (supports presets, custom names, or direct IDs)
+    voice_id = resolve_voice_id(voice, client)
 
     audio_generator = client.text_to_speech.convert(
         text=text,
