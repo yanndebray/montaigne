@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "montaigne"
-version = "0.8.4"
+version = "0.8.5"
 description = "Media processing toolkit for presentation localization"
 readme = "README.md"
 license = {text = "MIT"}
