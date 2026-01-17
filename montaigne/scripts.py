@@ -9,8 +9,21 @@ from typing import List, Optional
 
 from .config import get_gemini_client
 from .logging import get_logger
+from .audio import GeminiQuotaError
 
 logger = get_logger(__name__)
+
+
+def _check_quota_error(e: Exception) -> None:
+    """Check if exception is a quota error and raise GeminiQuotaError if so."""
+    error_str = str(e)
+    if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str or "quota" in error_str.lower():
+        raise GeminiQuotaError(
+            "Gemini API daily quota exceeded. Your free tier limit has been reached.\n"
+            "Options:\n"
+            "  - Wait until tomorrow for quota reset\n"
+            "  - Upgrade your plan at https://ai.google.dev/pricing"
+        ) from e
 
 
 def _parse_field(text: str, field: str, multiline: bool = False) -> Optional[str]:
@@ -27,19 +40,19 @@ def _parse_field(text: str, field: str, multiline: bool = False) -> Optional[str
     if multiline:
         # Match until next uppercase field or end of text
         # Use word boundary (?<![A-Z_]) to avoid matching SUBTOPIC when looking for TOPIC
-        pattern = rf'(?<![A-Z_]){field}\s*:\s*(.+?)(?=\n[A-Z_]+\s*:|$)'
+        pattern = rf"(?<![A-Z_]){field}\s*:\s*(.+?)(?=\n[A-Z_]+\s*:|$)"
         match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
     else:
         # Match single line value with word boundary
-        pattern = rf'(?<![A-Z_]){field}\s*:\s*(.+?)(?:\n|$)'
+        pattern = rf"(?<![A-Z_]){field}\s*:\s*(.+?)(?:\n|$)"
         match = re.search(pattern, text, re.IGNORECASE)
 
     if match:
         value = match.group(1).strip()
         # Strip common markdown formatting
-        value = re.sub(r'\*\*(.+?)\*\*', r'\1', value)  # Bold
-        value = re.sub(r'\*(.+?)\*', r'\1', value)  # Italic
-        value = re.sub(r'`(.+?)`', r'\1', value)  # Code
+        value = re.sub(r"\*\*(.+?)\*\*", r"\1", value)  # Bold
+        value = re.sub(r"\*(.+?)\*", r"\1", value)  # Italic
+        value = re.sub(r"`(.+?)`", r"\1", value)  # Code
         return value
     return None
 
@@ -54,8 +67,8 @@ def _parse_numbered_list(text: str) -> List[str]:
     """
     items = []
     # Match lines starting with number followed by delimiter
-    pattern = r'^\s*(\d+)\s*[.\-)\]]\s*(.+)$'
-    for line in text.strip().split('\n'):
+    pattern = r"^\s*(\d+)\s*[.\-)\]]\s*(.+)$"
+    for line in text.strip().split("\n"):
         match = re.match(pattern, line)
         if match:
             items.append(match.group(2).strip())
@@ -73,14 +86,15 @@ def _validate_overview_response(text: str) -> List[str]:
     optional_fields = ["TOTAL_DURATION", "TERMINOLOGY", "NARRATIVE_NOTES"]
 
     for field in required_fields:
-        if not re.search(rf'{field}\s*:', text, re.IGNORECASE):
+        if not re.search(rf"{field}\s*:", text, re.IGNORECASE):
             missing.append(f"Missing required field: {field}")
 
     for field in optional_fields:
-        if not re.search(rf'{field}\s*:', text, re.IGNORECASE):
+        if not re.search(rf"{field}\s*:", text, re.IGNORECASE):
             missing.append(f"Missing optional field: {field}")
 
     return missing
+
 
 IMAGE_EXTENSIONS = {".jpeg", ".jpg", ".png", ".gif", ".webp"}
 SCRIPT_MODEL = "gemini-3-pro-preview"
@@ -181,12 +195,15 @@ NARRATIVE_NOTES: [2-3 sentences about the narrative arc - how the presentation f
         ),
     ]
 
-    response = client.models.generate_content(
-        model=SCRIPT_MODEL,
-        contents=contents,
-    )
-
-    text = response.text
+    try:
+        response = client.models.generate_content(
+            model=SCRIPT_MODEL,
+            contents=contents,
+        )
+        text = response.text
+    except Exception as e:
+        _check_quota_error(e)
+        raise
 
     # Validate response and warn about missing fields
     validation_warnings = _validate_overview_response(text)
@@ -347,13 +364,15 @@ SCRIPT:
         ),
     ]
 
-    response = client.models.generate_content(
-        model=SCRIPT_MODEL,
-        contents=contents,
-    )
-
-    # Parse response
-    text = response.text
+    try:
+        response = client.models.generate_content(
+            model=SCRIPT_MODEL,
+            contents=contents,
+        )
+        text = response.text
+    except Exception as e:
+        _check_quota_error(e)
+        raise
 
     title = f"Slide {slide_number}"
     slide_tone = "Professional"
@@ -443,6 +462,10 @@ def generate_scripts(
         logger.info("  Topic: %s", overview["topic"])
         logger.info("  Audience: %s", overview["audience"])
         logger.info("  Tone: %s", overview["tone"])
+    except GeminiQuotaError:
+        # Fail fast on quota errors - no point continuing
+        logger.error("Gemini quota exceeded during presentation analysis")
+        raise
     except Exception as e:
         logger.warning("  Overview analysis failed (%s), using defaults", e)
         overview = {
@@ -503,6 +526,16 @@ def generate_scripts(
             slides_data.append(slide_data)
             if not use_tqdm:
                 logger.info("    [OK] %s...", slide_data["title"][:40])
+        except GeminiQuotaError:
+            # Fail fast on quota errors - no point continuing
+            logger.error("Gemini quota exceeded at slide %d", i)
+            if slides_data:
+                logger.error(
+                    "Generated %d of %d scripts before hitting quota limit",
+                    len(slides_data),
+                    total_slides,
+                )
+            raise
         except Exception as e:
             if not use_tqdm:
                 logger.error("    [ERROR] %s", e)
