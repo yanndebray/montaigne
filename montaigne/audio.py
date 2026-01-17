@@ -198,9 +198,10 @@ def generate_slide_audio(
 def list_voices(provider: str = "gemini"):
     """List available voices for the selected provider."""
     if provider.lower() == "elevenlabs":
-        logger.info("Available ElevenLabs Voices:")
+        logger.info("Available ElevenLabs Voices (presets):")
         for name in ELEVENLABS_VOICES.keys():
             logger.info(" - %s", name)
+        logger.info("You can also use any custom ElevenLabs voice ID directly.")
     else:
         logger.info("Available Gemini Voices:")
         for name in VOICES:

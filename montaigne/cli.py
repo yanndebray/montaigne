@@ -732,7 +732,7 @@ One-command video:
     audio_parser.add_argument(
         "--voice",
         default=None,  # audio.py will handle the default (Orus or George)
-        help="Voice name: Gemini (Puck, Orus, etc.) or ElevenLabs (adam, bob, william)",
+        help="Voice name: Gemini (Puck, Orus, etc.) or ElevenLabs (preset: adam, bob, william, george; or any voice ID)",
     )
     audio_parser.add_argument(
     "--list-voices", 
@@ -792,7 +792,7 @@ One-command video:
     video_parser.add_argument(
         "--voice",
         default="Orus",
-        help="Voice name: Gemini (Orus, Puck, Charon, Kore, Fenrir, Aoede, etc.) or ElevenLabs (adam, bob, william)",
+        help="Voice name: Gemini (Orus, Puck, etc.) or ElevenLabs (preset: adam, bob, etc.; or any voice ID)",
     )
     # Add both here:
     video_parser.add_argument("--provider", choices=["gemini", "elevenlabs"], default="gemini")
@@ -838,8 +838,7 @@ Environment:
     cloud_video_parser.add_argument(
         "--voice",
         default="Orus",
-        choices=["Puck", "Charon", "Kore", "Fenrir", "Aoede", "Orus"],
-        help="TTS voice (default: Orus)",
+        help="Voice name: Gemini (Orus, Puck, etc.) or ElevenLabs (preset or any voice ID)",
     )
     cloud_video_parser.add_argument(
         "--context", "-c", help="Additional context for script generation"
