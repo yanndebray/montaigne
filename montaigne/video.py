@@ -20,6 +20,32 @@ def check_ffmpeg() -> bool:
         return False
 
 
+def validate_audio_file(audio_path: Path, min_size: int = 1000) -> None:
+    """
+    Validate that an audio file exists and has a reasonable size.
+
+    Args:
+        audio_path: Path to the audio file
+        min_size: Minimum file size in bytes (default: 1000)
+
+    Raises:
+        FileNotFoundError: If the audio file doesn't exist
+        ValueError: If the audio file is too small (likely corrupt or empty)
+    """
+    if not audio_path.exists():
+        raise FileNotFoundError(
+            f"Audio file not found: {audio_path}\n"
+            "This may indicate audio generation failed (e.g., API quota exceeded)."
+        )
+
+    file_size = audio_path.stat().st_size
+    if file_size < min_size:
+        raise ValueError(
+            f"Audio file too small ({file_size} bytes): {audio_path}\n"
+            "This may indicate audio generation failed (e.g., API quota exceeded)."
+        )
+
+
 def create_slide_clip(
     image_path: Path, audio_path: Path, output_path: Path, resolution: str = "1920:1080"
 ) -> Path:
@@ -34,7 +60,14 @@ def create_slide_clip(
 
     Returns:
         Path to the created video clip
+
+    Raises:
+        FileNotFoundError: If the audio file doesn't exist
+        ValueError: If the audio file is too small
     """
+    # Validate audio file before attempting ffmpeg
+    validate_audio_file(audio_path)
+
     width, height = resolution.split(":")
 
     cmd = [

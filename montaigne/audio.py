@@ -9,24 +9,14 @@ from typing import List, Dict, Optional
 
 from .config import get_gemini_client, get_elevenlabs_client
 from .logging import get_logger
+from .elevenlabs_tts import generate_slide_audio_elevenlabs, ELEVENLABS_VOICES, ElevenLabsQuotaError
 
 logger = get_logger(__name__)
-from .elevenlabs_tts import generate_slide_audio_elevenlabs, ELEVENLABS_VOICES
+
 # Available Gemini TTS voices
 VOICES = ["Puck", "Charon", "Kore", "Fenrir", "Aoede", "Orus"]
 DEFAULT_VOICE = "Orus"
 TTS_MODEL = "gemini-2.5-pro-preview-tts"
-
-# ElevenLabs constants
-ELEVENLABS_MODEL_ID = "eleven_multilingual_v2"
-ELEVENLABS_VOICES = {
-    "adam": "6FiCmD8eY5VyjOdG5Zjk",
-    "bob": "3nzyRCzDIWOtbkzj2qvj",
-    "william": "8Es4wFxsDlHBmFWAOWRS",
-    "george": "JBFqnCBsd6RMkjVDRZzb" # default
-}
-
-ELEVENLABS_VOICE_ID = ELEVENLABS_VOICES["george"] #default
 
 
 def parse_voiceover_script(script_path: Path) -> List[Dict]:
@@ -243,22 +233,28 @@ def generate_audio(
     for slide in slide_iterator:
         try:
             output_path = output_dir / f"slide_{slide['number']:02d}.{extension}"
-            
+
             if is_eleven:
                 generate_slide_audio_elevenlabs(
-                    slide["text"], 
-                    output_path, 
-                    voice=active_voice, 
+                    slide["text"],
+                    output_path,
+                    voice=active_voice,
                     client=client
                 )
             else:
                 generate_slide_audio(
-                    slide["text"], 
-                    output_path, 
-                    voice=active_voice, 
+                    slide["text"],
+                    output_path,
+                    voice=active_voice,
                     client=client
                 )
             generated_files.append(output_path)
+        except ElevenLabsQuotaError as e:
+            # Fail fast on quota errors - no point continuing
+            logger.error("ElevenLabs quota exceeded at slide %d", slide['number'])
+            logger.error(str(e))
+            logger.error("Generated %d of %d audio files before running out of credits", len(generated_files), len(slides))
+            raise
         except Exception as e:
             msg = f"Error on Slide {slide['number']}: {e}"
             if use_tqdm:
