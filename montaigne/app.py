@@ -16,20 +16,26 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Custom CSS for Crimson Pro font (matching website)
+# Custom CSS for Crimson Pro font and logo styling (matching website)
 st.markdown(
     """
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@500&display=swap');
 
-    [data-testid="stLogo"] {
+    .montaigne-logo {
         display: flex;
         align-items: center;
         gap: 0.5rem;
+        padding: 0.5rem 0;
+        text-decoration: none;
     }
 
-    [data-testid="stLogo"]::after {
-        content: "montaigne";
+    .montaigne-logo img {
+        width: 28px;
+        height: 28px;
+    }
+
+    .montaigne-logo span {
         font-family: 'Crimson Pro', Georgia, serif;
         font-size: 1.4rem;
         font-weight: 500;
@@ -37,18 +43,29 @@ st.markdown(
         color: #1a1816;
     }
 
-    /* Dark mode support */
-    @media (prefers-color-scheme: dark) {
-        [data-testid="stLogo"]::after {
-            color: #faf8f5;
-        }
+    /* Hide default sidebar header padding */
+    [data-testid="stSidebarHeader"] {
+        padding-top: 0.5rem;
     }
     </style>
     """,
     unsafe_allow_html=True,
 )
 
-st.logo(Path(__file__).parent.parent / "website" / "black-nib.png")
+# Logo with text in sidebar
+_logo_path = Path(__file__).parent.parent / "website" / "black-nib.png"
+import base64
+
+with open(_logo_path, "rb") as f:
+    _logo_b64 = base64.b64encode(f.read()).decode()
+
+st.sidebar.markdown(
+    f'''<div class="montaigne-logo">
+        <img src="data:image/png;base64,{_logo_b64}" alt="logo">
+        <span>montaigne</span>
+    </div>''',
+    unsafe_allow_html=True,
+)
 
 
 def extract_pdf_to_images(
@@ -415,7 +432,7 @@ def render_sidebar():
 def render_main_panel():
     """Render the main editing panel."""
     if not st.session_state.slides:
-        st.title("✒️ Montaigne")
+        # st.title("✒️ Montaigne")
         st.subheader("Presentation Editor")
         st.write("Upload a PDF or select an image folder to get started.")
 
