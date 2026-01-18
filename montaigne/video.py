@@ -46,6 +46,22 @@ def validate_audio_file(audio_path: Path, min_size: int = 1000) -> None:
         )
 
 
+def get_audio_duration(audio_path: Path) -> float:
+    """Get the duration of an audio file in seconds."""
+    cmd = [
+        "ffprobe",
+        "-v",
+        "quiet",
+        "-show_entries",
+        "format=duration",
+        "-of",
+        "csv=p=0",
+        str(audio_path),
+    ]
+    result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+    return float(result.stdout.strip())
+
+
 def create_slide_clip(
     image_path: Path, audio_path: Path, output_path: Path, resolution: str = "1920:1080"
 ) -> Path:
@@ -68,6 +84,9 @@ def create_slide_clip(
     # Validate audio file before attempting ffmpeg
     validate_audio_file(audio_path)
 
+    # Get exact audio duration to ensure video matches
+    audio_duration = get_audio_duration(audio_path)
+
     width, height = resolution.split(":")
 
     cmd = [
@@ -75,6 +94,8 @@ def create_slide_clip(
         "-y",
         "-loop",
         "1",
+        "-framerate",
+        "25",  # Explicit frame rate for consistency
         "-i",
         str(image_path),
         "-i",
@@ -89,7 +110,8 @@ def create_slide_clip(
         "192k",
         "-pix_fmt",
         "yuv420p",
-        "-shortest",
+        "-t",
+        str(audio_duration),  # Set exact duration to match audio
         "-vf",
         f"scale={width}:{height}:force_original_aspect_ratio=decrease,pad={width}:{height}:(ow-iw)/2:(oh-ih)/2",
         str(output_path),
