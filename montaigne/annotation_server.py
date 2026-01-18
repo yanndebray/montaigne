@@ -334,29 +334,18 @@ def get_html_template() -> str:
             padding: 0;
         }
 
-        html, body {
-            height: 100%;
-            margin: 0;
-        }
-
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
             background: var(--bg-primary);
             color: var(--text-primary);
             min-height: 100vh;
             transition: background-color 0.3s ease, color 0.3s ease;
-            display: flex;
-            flex-direction: column;
         }
 
         .container {
             max-width: 1400px;
             margin: 0 auto;
             padding: 20px;
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            min-height: 0;
         }
 
         header {
@@ -432,6 +421,80 @@ def get_html_template() -> str:
 
         .theme-toggle .icon-sun {
             display: block;
+        }
+
+        /* Help button */
+        .help-btn {
+            width: 40px;
+            height: 40px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            font-weight: 600;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .help-btn:hover {
+            background: var(--border);
+        }
+
+        .help-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 8px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px 16px;
+            min-width: 220px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            display: none;
+            z-index: 100;
+        }
+
+        .help-dropdown.show {
+            display: block;
+        }
+
+        [data-theme="light"] .help-dropdown {
+            background: var(--bg-primary);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .help-dropdown h4 {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .help-shortcut {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            font-size: 0.85rem;
+        }
+
+        .help-shortcut kbd {
+            background: var(--bg-tertiary);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'SF Mono', monospace;
+            font-size: 0.75rem;
+        }
+
+        [data-theme="light"] .help-shortcut kbd {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
         }
 
         .toolbar {
@@ -553,8 +616,6 @@ def get_html_template() -> str:
             grid-template-columns: 1fr 350px;
             gap: 20px;
             margin-top: 20px;
-            flex: 1;
-            min-height: 0;
         }
 
         /* Video Player */
@@ -724,7 +785,7 @@ def get_html_template() -> str:
             border-radius: 12px;
             display: flex;
             flex-direction: column;
-            min-height: 0;
+            max-height: calc(100vh - 120px);
             transition: background-color 0.3s ease;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
@@ -923,33 +984,6 @@ def get_html_template() -> str:
             color: var(--accent);
         }
 
-        /* Keyboard shortcuts help */
-        .shortcuts-help {
-            padding: 15px;
-            border-top: 1px solid var(--border);
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-            transition: background-color 0.3s ease;
-        }
-
-        .shortcut {
-            display: flex;
-            justify-content: space-between;
-            padding: 3px 0;
-        }
-
-        .shortcut kbd {
-            background: var(--bg-tertiary);
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-family: 'SF Mono', monospace;
-            transition: background-color 0.3s ease;
-        }
-
-        [data-theme="light"] .shortcut kbd {
-            background: var(--bg-primary);
-            border: 1px solid var(--border);
-        }
 
         /* Empty state */
         .empty-state {
@@ -1082,9 +1116,20 @@ def get_html_template() -> str:
         <div class="montaigne-logo">
             <span class="logo-icon">✒️</span>
             <span class="logo-text">montaigne</span>
-            <span class="logo-suffix">Annotate</span>
+            <span class="logo-suffix">annotate</span>
         </div>
         <div class="toolbar">
+            <button class="help-btn" onclick="toggleHelp()" title="Keyboard shortcuts">
+                ?
+                <div class="help-dropdown" id="help-dropdown">
+                    <h4>Keyboard Shortcuts</h4>
+                    <div class="help-shortcut"><span>Play/Pause</span><kbd>Space</kbd></div>
+                    <div class="help-shortcut"><span>Frame step</span><kbd>[</kbd> <kbd>]</kbd></div>
+                    <div class="help-shortcut"><span>In/Out points</span><kbd>I</kbd> <kbd>O</kbd></div>
+                    <div class="help-shortcut"><span>Submit</span><kbd>Ctrl+Enter</kbd></div>
+                    <div class="help-shortcut"><span>Clear range</span><kbd>Esc</kbd></div>
+                </div>
+            </button>
             <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
                 <span class="icon-sun">&#9728;</span>
                 <span class="icon-moon">&#9790;</span>
@@ -1181,12 +1226,6 @@ def get_html_template() -> str:
                     </div>
                 </div>
 
-                <div class="shortcuts-help">
-                    <div class="shortcut"><span>Play/Pause</span><kbd>Space</kbd></div>
-                    <div class="shortcut"><span>Frame step</span><kbd>[</kbd> <kbd>]</kbd></div>
-                    <div class="shortcut"><span>In/Out points</span><kbd>I</kbd> <kbd>O</kbd></div>
-                    <div class="shortcut"><span>Submit</span><kbd>Ctrl+Enter</kbd></div>
-                </div>
             </div>
         </div>
     </div>
@@ -1599,11 +1638,25 @@ def get_html_template() -> str:
 
         // Close dropdown when clicking outside
         document.addEventListener('click', (e) => {
-            const dropdown = document.querySelector('.export-dropdown');
-            if (dropdown && !dropdown.contains(e.target)) {
+            const exportDropdown = document.querySelector('.export-dropdown');
+            if (exportDropdown && !exportDropdown.contains(e.target)) {
                 closeExportMenu();
             }
+            const helpBtn = document.querySelector('.help-btn');
+            if (helpBtn && !helpBtn.contains(e.target)) {
+                closeHelp();
+            }
         });
+
+        function toggleHelp() {
+            const dropdown = document.getElementById('help-dropdown');
+            dropdown.classList.toggle('show');
+        }
+
+        function closeHelp() {
+            const dropdown = document.getElementById('help-dropdown');
+            dropdown.classList.remove('show');
+        }
 
         // ==========================================================================
         // Modal
