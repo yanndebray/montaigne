@@ -290,7 +290,11 @@ def get_html_template() -> str:
     <!-- WaveSurfer.js for waveform -->
     <script src="https://cdn.jsdelivr.net/npm/wavesurfer.js@7/dist/wavesurfer.min.js"></script>
 
+    <!-- Crimson Pro font for logo -->
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@500&display=swap" rel="stylesheet">
+
     <style>
+        /* Dark theme (default) */
         :root {
             --bg-primary: #1a1a2e;
             --bg-secondary: #16213e;
@@ -302,6 +306,26 @@ def get_html_template() -> str:
             --success: #4ecca3;
             --warning: #ffc93c;
             --border: #2a2a4a;
+            --video-bg: #000000;
+            --logo-text: #1a1816;
+            --header-bg: var(--bg-secondary);
+        }
+
+        /* Light theme (Streamlit-inspired) */
+        [data-theme="light"] {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8f9fa;
+            --bg-tertiary: #f0f2f6;
+            --text-primary: #262730;
+            --text-secondary: #6b7280;
+            --accent: #ff4b4b;
+            --accent-hover: #ff6b6b;
+            --success: #21c354;
+            --warning: #faca2b;
+            --border: #e6e9ef;
+            --video-bg: #0e1117;
+            --logo-text: #1a1816;
+            --header-bg: #ffffff;
         }
 
         * {
@@ -315,6 +339,7 @@ def get_html_template() -> str:
             background: var(--bg-primary);
             color: var(--text-primary);
             min-height: 100vh;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
 
         .container {
@@ -327,19 +352,75 @@ def get_html_template() -> str:
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 15px 20px;
-            background: var(--bg-secondary);
+            padding: 12px 20px;
+            background: var(--header-bg);
             border-bottom: 1px solid var(--border);
+            transition: background-color 0.3s ease;
         }
 
-        .logo {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--accent);
+        /* Montaigne logo styling (Crimson Pro, Streamlit-inspired) */
+        .montaigne-logo {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
         }
 
-        .logo span {
+        .montaigne-logo svg {
+            width: 28px;
+            height: 28px;
+        }
+
+        .montaigne-logo .logo-text {
+            font-family: 'Crimson Pro', Georgia, serif;
+            font-size: 1.4rem;
+            font-weight: 500;
+            letter-spacing: -0.02em;
             color: var(--text-primary);
+        }
+
+        .montaigne-logo .logo-suffix {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 400;
+            color: var(--text-secondary);
+            margin-left: 4px;
+        }
+
+        /* Theme toggle button */
+        .theme-toggle {
+            width: 40px;
+            height: 40px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            transition: all 0.2s;
+        }
+
+        .theme-toggle:hover {
+            background: var(--border);
+        }
+
+        [data-theme="light"] .theme-toggle .icon-sun {
+            display: none;
+        }
+
+        [data-theme="light"] .theme-toggle .icon-moon {
+            display: block;
+        }
+
+        .theme-toggle .icon-moon {
+            display: none;
+        }
+
+        .theme-toggle .icon-sun {
+            display: block;
         }
 
         .toolbar {
@@ -370,10 +451,21 @@ def get_html_template() -> str:
             background: var(--bg-tertiary);
             color: var(--text-primary);
             border: 1px solid var(--border);
+            transition: background-color 0.2s, border-color 0.2s, color 0.2s;
         }
 
         .btn-secondary:hover {
             background: var(--border);
+        }
+
+        /* Light theme specific button adjustments */
+        [data-theme="light"] .btn-secondary {
+            background: var(--bg-secondary);
+            border-color: var(--border);
+        }
+
+        [data-theme="light"] .btn-secondary:hover {
+            background: var(--bg-tertiary);
         }
 
         .main-content {
@@ -388,11 +480,17 @@ def get_html_template() -> str:
             background: var(--bg-secondary);
             border-radius: 12px;
             overflow: hidden;
+            transition: background-color 0.3s ease;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        [data-theme="light"] .player-section {
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 0 0 1px var(--border);
         }
 
         .video-container {
             position: relative;
-            background: black;
+            background: var(--video-bg);
         }
 
         #video-player {
@@ -413,6 +511,11 @@ def get_html_template() -> str:
             background: var(--bg-tertiary);
             padding: 10px;
             border-top: 1px solid var(--border);
+            transition: background-color 0.3s ease;
+        }
+
+        [data-theme="light"] .waveform-container {
+            background: var(--bg-secondary);
         }
 
         #waveform {
@@ -452,6 +555,7 @@ def get_html_template() -> str:
             padding: 15px;
             background: var(--bg-secondary);
             border-top: 1px solid var(--border);
+            transition: background-color 0.3s ease;
         }
 
         .time-display {
@@ -485,8 +589,17 @@ def get_html_template() -> str:
             transition: all 0.2s;
         }
 
+        [data-theme="light"] .playback-controls button {
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+        }
+
         .playback-controls button:hover {
             background: var(--border);
+        }
+
+        [data-theme="light"] .playback-controls button:hover {
+            background: var(--bg-tertiary);
         }
 
         .playback-controls button.active {
@@ -506,11 +619,21 @@ def get_html_template() -> str:
             padding: 4px 8px;
             background: var(--bg-tertiary);
             border-radius: 4px;
+            transition: background-color 0.3s ease;
+        }
+
+        [data-theme="light"] .range-display {
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
         }
 
         .range-display.active {
             background: rgba(233, 69, 96, 0.2);
             color: var(--accent);
+        }
+
+        [data-theme="light"] .range-display.active {
+            background: rgba(255, 75, 75, 0.15);
         }
 
         /* Annotation Panel */
@@ -520,6 +643,12 @@ def get_html_template() -> str:
             display: flex;
             flex-direction: column;
             max-height: calc(100vh - 140px);
+            transition: background-color 0.3s ease;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        [data-theme="light"] .annotation-panel {
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 0 0 1px var(--border);
         }
 
         .panel-header {
@@ -575,6 +704,11 @@ def get_html_template() -> str:
             font-size: 0.95rem;
             resize: none;
             min-height: 80px;
+            transition: background-color 0.3s ease, border-color 0.2s ease;
+        }
+
+        [data-theme="light"] #annotation-input {
+            background: var(--bg-primary);
         }
 
         #annotation-input:focus {
@@ -600,6 +734,11 @@ def get_html_template() -> str:
             color: var(--text-primary);
             font-size: 0.85rem;
             flex: 1;
+            transition: background-color 0.3s ease;
+        }
+
+        [data-theme="light"] .category-select {
+            background: var(--bg-primary);
         }
 
         /* Annotation List */
@@ -615,7 +754,13 @@ def get_html_template() -> str:
             border-radius: 8px;
             margin-bottom: 8px;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.2s, background-color 0.3s ease;
+            border-left: 3px solid transparent;
+        }
+
+        [data-theme="light"] .annotation-item {
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
             border-left: 3px solid transparent;
         }
 
@@ -702,6 +847,7 @@ def get_html_template() -> str:
             border-top: 1px solid var(--border);
             font-size: 0.75rem;
             color: var(--text-secondary);
+            transition: background-color 0.3s ease;
         }
 
         .shortcut {
@@ -715,6 +861,12 @@ def get_html_template() -> str:
             padding: 2px 6px;
             border-radius: 4px;
             font-family: 'SF Mono', monospace;
+            transition: background-color 0.3s ease;
+        }
+
+        [data-theme="light"] .shortcut kbd {
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
         }
 
         /* Empty state */
@@ -743,6 +895,12 @@ def get_html_template() -> str:
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
             animation: slideIn 0.3s ease;
             z-index: 1000;
+            transition: background-color 0.3s ease;
+        }
+
+        [data-theme="light"] .toast {
+            background: var(--bg-primary);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
 
         .toast.success {
@@ -778,8 +936,19 @@ def get_html_template() -> str:
 </head>
 <body>
     <header>
-        <div class="logo">Montaigne <span>Annotate</span></div>
+        <div class="montaigne-logo">
+            <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect width="100" height="100" rx="20" fill="var(--accent)"/>
+                <path d="M25 70V30h10l12 25 12-25h10v40h-8V42l-10 22h-8l-10-22v28h-8z" fill="white"/>
+            </svg>
+            <span class="logo-text">Montaigne</span>
+            <span class="logo-suffix">Annotate</span>
+        </div>
         <div class="toolbar">
+            <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+                <span class="icon-sun">&#9728;</span>
+                <span class="icon-moon">&#9790;</span>
+            </button>
             <button class="btn btn-secondary" onclick="exportAnnotations('json')">Export JSON</button>
             <button class="btn btn-secondary" onclick="exportAnnotations('srt')">Export SRT</button>
             <button class="btn btn-primary" onclick="exportAnnotations('vtt')">Export WebVTT</button>
@@ -949,11 +1118,15 @@ def get_html_template() -> str:
         }
 
         function initWaveform() {
+            const theme = document.documentElement.getAttribute('data-theme') || 'dark';
+            const waveColor = theme === 'light' ? '#cbd5e1' : '#4a4a6a';
+            const progressColor = theme === 'light' ? '#ff4b4b' : '#e94560';
+
             wavesurfer = WaveSurfer.create({
                 container: '#waveform',
-                waveColor: '#4a4a6a',
-                progressColor: '#e94560',
-                cursorColor: '#e94560',
+                waveColor: waveColor,
+                progressColor: progressColor,
+                cursorColor: progressColor,
                 height: 80,
                 barWidth: 2,
                 barGap: 1,
@@ -1336,6 +1509,44 @@ def get_html_template() -> str:
                 // The character will be typed automatically
             }
         });
+
+        // ==========================================================================
+        // Theme Management
+        // ==========================================================================
+        function getPreferredTheme() {
+            const stored = localStorage.getItem('montaigne-theme');
+            if (stored) return stored;
+            return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+        }
+
+        function setTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('montaigne-theme', theme);
+
+            // Update waveform colors if initialized
+            if (wavesurfer) {
+                const waveColor = theme === 'light' ? '#cbd5e1' : '#4a4a6a';
+                const progressColor = theme === 'light' ? '#ff4b4b' : '#e94560';
+                wavesurfer.setOptions({
+                    waveColor: waveColor,
+                    progressColor: progressColor,
+                    cursorColor: progressColor,
+                });
+            }
+        }
+
+        function toggleTheme() {
+            const current = document.documentElement.getAttribute('data-theme') || 'dark';
+            const next = current === 'dark' ? 'light' : 'dark';
+            setTheme(next);
+            showToast(`Switched to ${next} mode`);
+        }
+
+        // Initialize theme on page load (before DOMContentLoaded to prevent flash)
+        (function() {
+            const theme = getPreferredTheme();
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
 
         // ==========================================================================
         // Utilities

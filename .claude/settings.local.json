@@ -10,7 +10,8 @@
       "mcp__github__issue_read",
       "mcp__github__add_issue_comment",
       "Bash(black:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(gh release view:*)"
     ]
   }
 }
