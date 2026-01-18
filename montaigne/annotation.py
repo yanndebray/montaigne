@@ -332,7 +332,7 @@ def ms_to_timecode(ms: int, format: str = "vtt") -> str:
     seconds, milliseconds = divmod(remainder, 1000)
 
     separator = "." if format == "vtt" else ","
-    return f"{hours:02d}:{minutes:02d}:{seconds:02d}{separator}{milliseconds:03d}"
+    return f"{int(hours):02d}:{int(minutes):02d}:{int(seconds):02d}{separator}{int(milliseconds):03d}"
 
 
 def export_to_webvtt(
