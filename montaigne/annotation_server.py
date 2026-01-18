@@ -366,9 +366,9 @@ def get_html_template() -> str:
             text-decoration: none;
         }
 
-        .montaigne-logo svg {
-            width: 28px;
-            height: 28px;
+        .montaigne-logo .logo-icon {
+            font-size: 1.5rem;
+            line-height: 1;
         }
 
         .montaigne-logo .logo-text {
@@ -466,6 +466,75 @@ def get_html_template() -> str:
 
         [data-theme="light"] .btn-secondary:hover {
             background: var(--bg-tertiary);
+        }
+
+        /* Export dropdown */
+        .export-dropdown {
+            position: relative;
+        }
+
+        .export-main {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            height: 40px;
+            padding: 0 12px;
+        }
+
+        .dropdown-arrow {
+            padding: 0 4px;
+            margin-left: 4px;
+            border-left: 1px solid rgba(255, 255, 255, 0.3);
+            cursor: pointer;
+        }
+
+        .dropdown-arrow:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .export-menu {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 4px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            min-width: 150px;
+            display: none;
+            z-index: 100;
+            overflow: hidden;
+        }
+
+        .export-menu.show {
+            display: block;
+        }
+
+        .export-menu button {
+            display: block;
+            width: 100%;
+            padding: 10px 16px;
+            border: none;
+            background: none;
+            color: var(--text-primary);
+            text-align: left;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background-color 0.2s;
+        }
+
+        .export-menu button:hover {
+            background: var(--bg-tertiary);
+        }
+
+        [data-theme="light"] .export-menu {
+            background: var(--bg-primary);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        [data-theme="light"] .export-menu button:hover {
+            background: var(--bg-secondary);
         }
 
         .main-content {
@@ -911,6 +980,67 @@ def get_html_template() -> str:
             border-color: var(--accent);
         }
 
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            animation: fadeIn 0.2s ease;
+        }
+
+        .modal {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 0;
+            min-width: 320px;
+            max-width: 90%;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            animation: scaleIn 0.2s ease;
+        }
+
+        [data-theme="light"] .modal {
+            background: var(--bg-primary);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+        }
+
+        .modal-header {
+            padding: 16px 20px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            border-bottom: 1px solid var(--border);
+            color: var(--accent);
+        }
+
+        .modal-body {
+            padding: 20px;
+            color: var(--text-primary);
+            line-height: 1.5;
+        }
+
+        .modal-footer {
+            padding: 12px 20px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes scaleIn {
+            from { transform: scale(0.95); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
         @keyframes slideIn {
             from {
                 transform: translateX(100%);
@@ -937,11 +1067,8 @@ def get_html_template() -> str:
 <body>
     <header>
         <div class="montaigne-logo">
-            <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect width="100" height="100" rx="20" fill="var(--accent)"/>
-                <path d="M25 70V30h10l12 25 12-25h10v40h-8V42l-10 22h-8l-10-22v28h-8z" fill="white"/>
-            </svg>
-            <span class="logo-text">Montaigne</span>
+            <span class="logo-icon">&#9998;</span>
+            <span class="logo-text">montaigne</span>
             <span class="logo-suffix">Annotate</span>
         </div>
         <div class="toolbar">
@@ -949,9 +1076,17 @@ def get_html_template() -> str:
                 <span class="icon-sun">&#9728;</span>
                 <span class="icon-moon">&#9790;</span>
             </button>
-            <button class="btn btn-secondary" onclick="exportAnnotations('json')">Export JSON</button>
-            <button class="btn btn-secondary" onclick="exportAnnotations('srt')">Export SRT</button>
-            <button class="btn btn-primary" onclick="exportAnnotations('vtt')">Export WebVTT</button>
+            <div class="export-dropdown">
+                <button class="btn btn-primary export-main" onclick="exportAnnotations('vtt')">
+                    Export
+                    <span class="dropdown-arrow" onclick="event.stopPropagation(); toggleExportMenu()">&#9662;</span>
+                </button>
+                <div class="export-menu" id="export-menu">
+                    <button onclick="exportAnnotations('vtt'); closeExportMenu()">WebVTT (.vtt)</button>
+                    <button onclick="exportAnnotations('srt'); closeExportMenu()">SubRip (.srt)</button>
+                    <button onclick="exportAnnotations('json'); closeExportMenu()">JSON (.json)</button>
+                </div>
+            </div>
         </div>
     </header>
 
@@ -1412,8 +1547,82 @@ def get_html_template() -> str:
         // ==========================================================================
         // Export Functions
         // ==========================================================================
-        function exportAnnotations(format) {
-            window.location.href = `/api/export/${format}`;
+        async function exportAnnotations(format) {
+            try {
+                const response = await fetch(`/api/export/${format}`);
+
+                if (!response.ok) {
+                    const data = await response.json();
+                    showModal('Export Error', data.error || 'Failed to export annotations');
+                    return;
+                }
+
+                // Download the file
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                const extensions = { vtt: 'vtt', srt: 'srt', json: 'json' };
+                a.download = `annotations.${extensions[format] || format}`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                a.remove();
+                showToast(`Exported as ${format.toUpperCase()}`);
+            } catch (error) {
+                showModal('Export Error', 'Failed to export annotations. Please try again.');
+            }
+        }
+
+        function toggleExportMenu() {
+            const menu = document.getElementById('export-menu');
+            menu.classList.toggle('show');
+        }
+
+        function closeExportMenu() {
+            const menu = document.getElementById('export-menu');
+            menu.classList.remove('show');
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            const dropdown = document.querySelector('.export-dropdown');
+            if (dropdown && !dropdown.contains(e.target)) {
+                closeExportMenu();
+            }
+        });
+
+        // ==========================================================================
+        // Modal
+        // ==========================================================================
+        function showModal(title, message) {
+            // Remove existing modal
+            const existing = document.getElementById('modal-overlay');
+            if (existing) existing.remove();
+
+            const overlay = document.createElement('div');
+            overlay.id = 'modal-overlay';
+            overlay.className = 'modal-overlay';
+            overlay.innerHTML = `
+                <div class="modal">
+                    <div class="modal-header">${escapeHtml(title)}</div>
+                    <div class="modal-body">${escapeHtml(message)}</div>
+                    <div class="modal-footer">
+                        <button class="btn btn-primary" onclick="closeModal()">OK</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+
+            // Close on overlay click
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) closeModal();
+            });
+        }
+
+        function closeModal() {
+            const overlay = document.getElementById('modal-overlay');
+            if (overlay) overlay.remove();
         }
 
         // ==========================================================================
