@@ -43,6 +43,14 @@ st.markdown(
         color: #1a1816;
     }
 
+    .montaigne-logo .logo-suffix {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        font-size: 0.85rem;
+        font-weight: 400;
+        color: #6b635a;
+        margin-left: 4px;
+    }
+
     /* Hide default sidebar header padding */
     [data-testid="stSidebarHeader"] {
         padding-top: 0.5rem;
@@ -63,6 +71,7 @@ st.sidebar.markdown(
     f'''<div class="montaigne-logo">
         <img src="data:image/png;base64,{_logo_b64}" alt="logo">
         <span>montaigne</span>
+        <span class="logo-suffix">edit</span>
     </div>''',
     unsafe_allow_html=True,
 )
