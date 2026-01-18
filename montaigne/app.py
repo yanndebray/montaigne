@@ -10,7 +10,7 @@ import streamlit as st
 
 # Page config must be first Streamlit command
 st.set_page_config(
-    page_title="Montaigne - Presentation Editor",
+    page_title="montaigne - edit",
     page_icon="✒️",
     layout="wide",
     initial_sidebar_state="expanded",
