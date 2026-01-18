@@ -46,6 +46,9 @@ dev = [
 webapp = [
     "streamlit>=1.30.0",
 ]
+annotate = [
+    "flask>=3.0.0",
+]
 cloud = [
     "fastapi>=0.100.0",
     "uvicorn[standard]>=0.20.0",
@@ -53,7 +56,7 @@ cloud = [
     "python-multipart>=0.0.6",
 ]
 all = [
-    "montaigne[dev,webapp,cloud]",
+    "montaigne[dev,webapp,cloud,annotate]",
 ]
 
 [project.scripts]
