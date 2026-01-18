@@ -709,9 +709,24 @@ def cmd_annotate(args):
 
     db_path = Path(args.db) if args.db else None
 
+    # Determine host - --network flag overrides --host
+    host = "0.0.0.0" if args.network else args.host
+
+    if args.network:
+        import socket
+        try:
+            # Get local IP for display
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect(("8.8.8.8", 80))
+            local_ip = s.getsockname()[0]
+            s.close()
+            logger.info("Network mode: accessible at http://%s:%d", local_ip, args.port)
+        except Exception:
+            logger.info("Network mode: server will be accessible on all interfaces")
+
     run_server(
         media_path=media_path,
-        host=args.host,
+        host=host,
         port=args.port,
         db_path=db_path,
         open_browser=not args.no_browser,
@@ -960,6 +975,7 @@ Examples:
   essai annotate video.mp4              # Open annotation UI for video
   essai annotate --input audio.wav      # Open annotation UI for audio
   essai annotate                        # Auto-detect media file in current dir
+  essai annotate video.mp4 --network    # Make accessible on local network
   essai annotate video.mp4 --export srt # Export annotations to SRT
   essai annotate video.mp4 --export vtt # Export annotations to WebVTT
   essai annotate video.mp4 --export json -o notes.json
@@ -976,6 +992,11 @@ Keyboard shortcuts in the annotation UI:
     annotate_parser.add_argument("input", nargs="?", help="Video or audio file to annotate")
     annotate_parser.add_argument("--host", default="127.0.0.1", help="Server host (default: 127.0.0.1)")
     annotate_parser.add_argument("--port", "-p", type=int, default=8765, help="Server port (default: 8765)")
+    annotate_parser.add_argument(
+        "--network",
+        action="store_true",
+        help="Make server accessible on the network (binds to 0.0.0.0)",
+    )
     annotate_parser.add_argument("--db", help="Custom SQLite database path for annotations")
     annotate_parser.add_argument("--no-browser", action="store_true", help="Don't auto-open browser")
     annotate_parser.add_argument(
