@@ -9,7 +9,7 @@ A unified tool for processing presentations:
 - Generate videos from slides and audio
 """
 
-__version__ = "0.9.5"
+__version__ = "0.9.6"
 
 from .pdf import extract_pdf_pages
 from .scripts import generate_scripts, generate_slide_script

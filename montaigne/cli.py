@@ -330,15 +330,15 @@ def cmd_ppt(args):
     )
 
 
-def cmd_webapp(args):
-    """Launch the Streamlit web application."""
+def cmd_edit(args):
+    """Launch the Streamlit web editor."""
     import subprocess
 
     try:
         import streamlit  # noqa: F401
     except ImportError:
         logger.error("Streamlit not installed. Install with:")
-        logger.error("  pip install montaigne[webapp]")
+        logger.error("  pip install montaigne[edit]")
         sys.exit(1)
 
     logger.info("=== Launching Montaigne Web App ===")
@@ -721,7 +721,7 @@ def main():
         epilog="""
 Examples:
   essai setup                           # Install dependencies
-  essai webapp                          # Launch web editor
+  essai edit                             # Launch web editor
   essai pdf presentation.pdf            # Extract PDF to images
   essai script --input presentation.pdf # Generate voiceover script from PDF
   essai audio --script voiceover.md     # Generate audio from script
@@ -732,7 +732,7 @@ Examples:
   essai localize --pdf deck.pdf --script script.md --lang Spanish
 
 Web Editor:
-  essai webapp                          # Launch Streamlit slide editor
+  essai edit                             # Launch Streamlit slide editor
 
 Full pipeline (manual):
   essai pdf presentation.pdf            # Step 1: Extract slides
@@ -763,10 +763,10 @@ One-command video:
     )
 
     # Webapp command
-    webapp_parser = subparsers.add_parser("webapp", help="Launch the Streamlit web application")
-    webapp_parser.add_argument("--pdf", "-p", help="PDF file to preload")
-    webapp_parser.add_argument("--images", "-i", help="Images folder to preload")
-    webapp_parser.add_argument("--script", "-s", help="Voiceover script (.md) to preload")
+    edit_parser = subparsers.add_parser("edit", help="Launch the Streamlit web editor")
+    edit_parser.add_argument("--pdf", "-p", help="PDF file to preload")
+    edit_parser.add_argument("--images", "-i", help="Images folder to preload")
+    edit_parser.add_argument("--script", "-s", help="Voiceover script (.md) to preload")
 
     # PDF command
     pdf_parser = subparsers.add_parser("pdf", help="Extract PDF pages to images")
@@ -991,7 +991,7 @@ Environment:
     commands = {
         "setup": cmd_setup,
         "models": cmd_models,
-        "webapp": cmd_webapp,
+        "edit": cmd_edit,
         "pdf": cmd_pdf,
         "script": cmd_script,
         "audio": cmd_audio,

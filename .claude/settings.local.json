@@ -10,7 +10,11 @@
       "mcp__github__issue_read",
       "mcp__github__add_issue_comment",
       "Bash(black:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(ffmpeg:*)",
+      "Bash(ffprobe:*)",
+      "Bash(python -c:*)",
+      "Bash(ruff check:*)"
     ]
   }
 }

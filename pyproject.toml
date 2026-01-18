@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "montaigne"
-version = "0.9.5"
+version = "0.9.6"
 description = "Media processing toolkit for presentation localization"
 readme = "README.md"
 license = {text = "MIT"}
@@ -43,7 +43,7 @@ dev = [
     "black>=23.0.0",
     "ruff>=0.1.0",
 ]
-webapp = [
+edit = [
     "streamlit>=1.30.0",
 ]
 cloud = [
@@ -53,7 +53,7 @@ cloud = [
     "python-multipart>=0.0.6",
 ]
 all = [
-    "montaigne[dev,webapp,cloud]",
+    "montaigne[dev,edit,cloud]",
 ]
 
 [project.scripts]
