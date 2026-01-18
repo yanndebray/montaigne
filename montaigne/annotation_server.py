@@ -1016,8 +1016,16 @@ def get_html_template() -> str:
 
         function stepFrame(direction) {
             const frameDuration = 1000 / state.fps;
-            const newTime = (state.currentTime + (direction * frameDuration)) / 1000;
-            player.currentTime(Math.max(0, Math.min(newTime, state.duration / 1000)));
+            const newTimeMs = state.currentTime + (direction * frameDuration);
+            const clampedMs = Math.max(0, Math.min(newTimeMs, state.duration));
+            const newTimeSec = clampedMs / 1000;
+
+            // Update state immediately for responsive repeated stepping
+            state.currentTime = clampedMs;
+            updateTimeDisplay();
+
+            // Then sync the player
+            player.currentTime(newTimeSec);
         }
 
         function setInPoint() {
