@@ -342,13 +342,41 @@ def cmd_webapp(args):
         sys.exit(1)
 
     logger.info("=== Launching Montaigne Web App ===")
+
+    # Set environment variables for preloading
+    env = os.environ.copy()
+
+    if args.pdf:
+        pdf_path = Path(args.pdf).resolve()
+        if pdf_path.exists():
+            env["MONTAIGNE_PRELOAD_PDF"] = str(pdf_path)
+            logger.info("Preloading PDF: %s", pdf_path.name)
+        else:
+            logger.warning("PDF not found: %s", args.pdf)
+
+    if args.images:
+        images_path = Path(args.images).resolve()
+        if images_path.exists() and images_path.is_dir():
+            env["MONTAIGNE_PRELOAD_IMAGES"] = str(images_path)
+            logger.info("Preloading images: %s", images_path.name)
+        else:
+            logger.warning("Images folder not found: %s", args.images)
+
+    if args.script:
+        script_path = Path(args.script).resolve()
+        if script_path.exists():
+            env["MONTAIGNE_PRELOAD_SCRIPT"] = str(script_path)
+            logger.info("Preloading script: %s", script_path.name)
+        else:
+            logger.warning("Script not found: %s", args.script)
+
     logger.info("Opening in browser...")
 
     # Get the path to app.py
     app_path = Path(__file__).parent / "app.py"
 
-    # Launch streamlit
-    subprocess.run([sys.executable, "-m", "streamlit", "run", str(app_path)])
+    # Launch streamlit with environment variables
+    subprocess.run([sys.executable, "-m", "streamlit", "run", str(app_path)], env=env)
 
 
 # =============================================================================
@@ -735,7 +763,10 @@ One-command video:
     )
 
     # Webapp command
-    subparsers.add_parser("webapp", help="Launch the Streamlit web application")
+    webapp_parser = subparsers.add_parser("webapp", help="Launch the Streamlit web application")
+    webapp_parser.add_argument("--pdf", "-p", help="PDF file to preload")
+    webapp_parser.add_argument("--images", "-i", help="Images folder to preload")
+    webapp_parser.add_argument("--script", "-s", help="Voiceover script (.md) to preload")
 
     # PDF command
     pdf_parser = subparsers.add_parser("pdf", help="Extract PDF pages to images")

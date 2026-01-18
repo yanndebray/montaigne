@@ -1,5 +1,6 @@
 """Streamlit web app for presentation slide editing and voiceover script management."""
 
+import os
 import re
 import tempfile
 from pathlib import Path
@@ -528,9 +529,103 @@ def render_main_panel():
         st.metric("Total Words", f"{total_words:,}")
 
 
+def preload_from_env():
+    """Preload files from environment variables (set by CLI)."""
+    # Only run once per session
+    if st.session_state.get("preload_done"):
+        return
+
+    preload_pdf = os.environ.get("MONTAIGNE_PRELOAD_PDF")
+    preload_images = os.environ.get("MONTAIGNE_PRELOAD_IMAGES")
+    preload_script = os.environ.get("MONTAIGNE_PRELOAD_SCRIPT")
+
+    # Preload PDF
+    if preload_pdf and not st.session_state.slides:
+        pdf_path = Path(preload_pdf)
+        if pdf_path.exists():
+            # Create temp directory
+            if st.session_state.temp_dir is None:
+                st.session_state.temp_dir = tempfile.mkdtemp()
+
+            temp_dir = Path(st.session_state.temp_dir)
+            images_dir = temp_dir / "slides"
+
+            # Extract with progress bar
+            with st.spinner(f"Loading {pdf_path.name}..."):
+                images = extract_pdf_to_images(pdf_path, images_dir)
+
+            st.session_state.slides = images
+            st.session_state.presentation_title = pdf_path.stem
+            st.session_state.thumbnails = {}
+            st.session_state.loaded_pdf_name = pdf_path.name
+
+            # Generate thumbnails
+            generate_thumbnails_for_slides(images)
+
+            # Initialize empty scripts for each slide
+            st.session_state.scripts = [
+                {
+                    "number": i + 1,
+                    "title": f"Slide {i + 1}",
+                    "duration": "30-45 seconds",
+                    "tone": "Professional",
+                    "text": "",
+                }
+                for i in range(len(images))
+            ]
+            st.session_state.selected_slide = 0
+            st.toast(f"Loaded {len(images)} slides from {pdf_path.name}")
+
+    # Preload images folder
+    elif preload_images and not st.session_state.slides:
+        images_path = Path(preload_images)
+        if images_path.exists() and images_path.is_dir():
+            images = load_images_from_folder(images_path)
+            if images:
+                st.session_state.slides = images
+                st.session_state.presentation_title = images_path.name
+                st.session_state.thumbnails = {}
+
+                # Generate thumbnails
+                generate_thumbnails_for_slides(images)
+
+                st.session_state.scripts = [
+                    {
+                        "number": i + 1,
+                        "title": f"Slide {i + 1}",
+                        "duration": "30-45 seconds",
+                        "tone": "Professional",
+                        "text": "",
+                    }
+                    for i in range(len(images))
+                ]
+                st.session_state.selected_slide = 0
+                st.toast(f"Loaded {len(images)} slides from {images_path.name}")
+
+    # Preload script (only if slides are loaded)
+    if preload_script and st.session_state.slides:
+        script_path = Path(preload_script)
+        if script_path.exists() and script_path.name != st.session_state.loaded_script_name:
+            content = script_path.read_text(encoding="utf-8")
+            parsed = parse_voiceover_script(content)
+
+            # Map parsed scripts to slides
+            for script in parsed:
+                idx = script["number"] - 1
+                if 0 <= idx < len(st.session_state.scripts):
+                    st.session_state.scripts[idx] = script
+
+            st.session_state.loaded_script_name = script_path.name
+            st.session_state.editor_version += 1
+            st.toast(f"Loaded scripts for {len(parsed)} slides from {script_path.name}")
+
+    st.session_state.preload_done = True
+
+
 def main():
     """Main app entry point."""
     init_session_state()
+    preload_from_env()
     render_sidebar()
     render_main_panel()
 
