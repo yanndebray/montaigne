@@ -11,10 +11,12 @@ import streamlit as st
 # Page config must be first Streamlit command
 st.set_page_config(
     page_title="Montaigne - Presentation Editor",
-    page_icon="🎬",
+    page_icon="✒️",
     layout="wide",
     initial_sidebar_state="expanded",
 )
+
+st.logo(Path(__file__).parent.parent / "website" / "black-nib.png")
 
 
 def extract_pdf_to_images(
