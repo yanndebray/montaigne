@@ -16,23 +16,29 @@ st.set_page_config(
 )
 
 
-def extract_pdf_to_images(pdf_path: Path, output_dir: Path) -> List[Path]:
+def extract_pdf_to_images(
+    pdf_path: Path, output_dir: Path, progress_callback=None
+) -> List[Path]:
     """Extract PDF pages to images using PyMuPDF."""
     import fitz
 
     output_dir.mkdir(parents=True, exist_ok=True)
     doc = fitz.open(pdf_path)
     images = []
+    total_pages = len(doc)
 
     zoom = 150 / 72  # 150 DPI
     matrix = fitz.Matrix(zoom, zoom)
 
-    for page_num in range(len(doc)):
+    for page_num in range(total_pages):
         page = doc[page_num]
         pix = page.get_pixmap(matrix=matrix)
         output_path = output_dir / f"page_{page_num + 1:03d}.png"
         pix.save(output_path)
         images.append(output_path)
+
+        if progress_callback:
+            progress_callback(page_num + 1, total_pages)
 
     doc.close()
     return images
@@ -171,6 +177,14 @@ def init_session_state():
         st.session_state.temp_dir = None
     if "modified" not in st.session_state:
         st.session_state.modified = False
+    if "thumbnails" not in st.session_state:
+        st.session_state.thumbnails = {}  # Cache: path -> thumbnail bytes
+    if "loaded_pdf_name" not in st.session_state:
+        st.session_state.loaded_pdf_name = None  # Track which PDF was loaded
+    if "loaded_script_name" not in st.session_state:
+        st.session_state.loaded_script_name = None  # Track which script was loaded
+    if "editor_version" not in st.session_state:
+        st.session_state.editor_version = 0  # Incremented to force widget refresh
 
 
 def load_images_from_folder(folder_path: Path) -> List[Path]:
@@ -178,6 +192,23 @@ def load_images_from_folder(folder_path: Path) -> List[Path]:
     extensions = {".png", ".jpg", ".jpeg", ".gif", ".webp"}
     images = sorted([f for f in folder_path.iterdir() if f.suffix.lower() in extensions])
     return images
+
+
+def get_cached_thumbnail(image_path: Path, max_width: int = 180) -> bytes:
+    """Get thumbnail from cache or generate and cache it."""
+    cache_key = str(image_path)
+    if cache_key not in st.session_state.thumbnails:
+        st.session_state.thumbnails[cache_key] = generate_thumbnail(image_path, max_width)
+    return st.session_state.thumbnails[cache_key]
+
+
+def generate_thumbnails_for_slides(slides: List[Path]) -> None:
+    """Pre-generate thumbnails for all slides with progress indicator."""
+    progress_bar = st.progress(0, text="Generating thumbnails...")
+    for i, slide_path in enumerate(slides):
+        get_cached_thumbnail(slide_path)
+        progress_bar.progress((i + 1) / len(slides), text=f"Generating thumbnail {i + 1}/{len(slides)}")
+    progress_bar.empty()
 
 
 def render_sidebar():
@@ -189,68 +220,97 @@ def render_sidebar():
         with st.expander("📂 Load Presentation", expanded=not st.session_state.slides):
             # PDF upload
             pdf_file = st.file_uploader("Upload PDF", type=["pdf"], key="pdf_uploader")
-            if pdf_file:
-                with st.spinner("Extracting slides..."):
-                    # Create temp directory
-                    if st.session_state.temp_dir is None:
-                        st.session_state.temp_dir = tempfile.mkdtemp()
+            if pdf_file and pdf_file.name != st.session_state.loaded_pdf_name:
+                # Create temp directory
+                if st.session_state.temp_dir is None:
+                    st.session_state.temp_dir = tempfile.mkdtemp()
 
-                    temp_dir = Path(st.session_state.temp_dir)
-                    pdf_path = temp_dir / pdf_file.name
-                    images_dir = temp_dir / "slides"
+                temp_dir = Path(st.session_state.temp_dir)
+                pdf_path = temp_dir / pdf_file.name
+                images_dir = temp_dir / "slides"
 
-                    # Save uploaded PDF
-                    with open(pdf_path, "wb") as f:
-                        f.write(pdf_file.getbuffer())
+                # Save uploaded PDF
+                with open(pdf_path, "wb") as f:
+                    f.write(pdf_file.getbuffer())
 
-                    # Extract to images
-                    images = extract_pdf_to_images(pdf_path, images_dir)
-                    st.session_state.slides = images
-                    st.session_state.presentation_title = pdf_path.stem
+                # Extract with progress bar
+                progress_bar = st.progress(0, text="Extracting slides...")
 
-                    # Initialize empty scripts for each slide
-                    st.session_state.scripts = [
-                        {
-                            "number": i + 1,
-                            "title": f"Slide {i + 1}",
-                            "duration": "30-45 seconds",
-                            "tone": "Professional",
-                            "text": "",
-                        }
-                        for i in range(len(images))
-                    ]
-                    st.session_state.selected_slide = 0
-                    st.success(f"Loaded {len(images)} slides!")
-                    st.rerun()
+                def update_progress(current, total):
+                    progress_bar.progress(current / total, text=f"Extracting slide {current}/{total}")
+
+                images = extract_pdf_to_images(pdf_path, images_dir, update_progress)
+                progress_bar.empty()
+
+                st.session_state.slides = images
+                st.session_state.presentation_title = pdf_path.stem
+                st.session_state.thumbnails = {}  # Clear old thumbnails
+                st.session_state.loaded_pdf_name = pdf_file.name  # Mark as loaded
+
+                # Generate thumbnails with progress
+                generate_thumbnails_for_slides(images)
+
+                # Initialize empty scripts for each slide
+                st.session_state.scripts = [
+                    {
+                        "number": i + 1,
+                        "title": f"Slide {i + 1}",
+                        "duration": "30-45 seconds",
+                        "tone": "Professional",
+                        "text": "",
+                    }
+                    for i in range(len(images))
+                ]
+                st.session_state.selected_slide = 0
+                st.success(f"Loaded {len(images)} slides!")
+                st.rerun()
 
             # Script upload
             script_file = st.file_uploader(
                 "Upload Voiceover Script (.md)", type=["md", "txt"], key="script_uploader"
             )
             if script_file and st.session_state.slides:
-                content = script_file.read().decode("utf-8")
-                parsed = parse_voiceover_script(content)
+                if script_file.name != st.session_state.loaded_script_name:
+                    content = script_file.read().decode("utf-8")
+                    parsed = parse_voiceover_script(content)
 
-                # Map parsed scripts to slides
-                for script in parsed:
-                    idx = script["number"] - 1
-                    if 0 <= idx < len(st.session_state.scripts):
-                        st.session_state.scripts[idx] = script
+                    # Map parsed scripts to slides
+                    for script in parsed:
+                        idx = script["number"] - 1
+                        if 0 <= idx < len(st.session_state.scripts):
+                            st.session_state.scripts[idx] = script
 
-                st.success(f"Loaded scripts for {len(parsed)} slides!")
-                st.rerun()
+                    st.session_state.loaded_script_name = script_file.name
+                    st.session_state.script_load_count = len(parsed)
+                    # Increment version to force new widget keys
+                    st.session_state.editor_version += 1
+                    st.rerun()
 
-            # Folder path input
+            # Show success message after rerun
+            if st.session_state.get("script_load_count"):
+                st.success(f"Loaded scripts for {st.session_state.script_load_count} slides!")
+                st.session_state.script_load_count = None
+
+            # Folder path input with better UX
+            st.markdown("**Or load from folder:**")
             folder_path = st.text_input(
-                "Or enter image folder path:", placeholder="/path/to/slides_images"
+                "Image folder path:",
+                placeholder="C:/path/to/slides or /path/to/slides",
+                help="Enter the full path to a folder containing slide images (PNG, JPG, etc.)",
+                label_visibility="collapsed",
             )
-            if folder_path and st.button("Load from Folder"):
+            if folder_path and st.button("📁 Load from Folder", type="secondary"):
                 path = Path(folder_path)
                 if path.exists() and path.is_dir():
                     images = load_images_from_folder(path)
                     if images:
                         st.session_state.slides = images
                         st.session_state.presentation_title = path.name
+                        st.session_state.thumbnails = {}  # Clear old thumbnails
+
+                        # Generate thumbnails with progress
+                        generate_thumbnails_for_slides(images)
+
                         st.session_state.scripts = [
                             {
                                 "number": i + 1,
@@ -298,9 +358,9 @@ def render_sidebar():
                             title = st.session_state.scripts[i].get("title", f"Slide {i + 1}")
                         st.caption(title[:20] + "..." if len(title) > 20 else title)
 
-                    # Thumbnail
+                    # Thumbnail (cached for performance)
                     try:
-                        thumb = generate_thumbnail(slide_path, max_width=180)
+                        thumb = get_cached_thumbnail(slide_path, max_width=180)
                         st.image(thumb, width="stretch")
                     except Exception:
                         st.image(str(slide_path), width="stretch")
@@ -387,9 +447,12 @@ def render_main_panel():
     with editor_col:
         st.subheader("✏️ Script Editor")
 
+        # Version suffix ensures widgets refresh when scripts are loaded
+        v = st.session_state.editor_version
+
         # Title
         new_title = st.text_input(
-            "Title", value=script.get("title", f"Slide {idx + 1}"), key=f"title_{idx}"
+            "Title", value=script.get("title", f"Slide {idx + 1}"), key=f"title_{idx}_v{v}"
         )
 
         # Duration and Tone in columns
@@ -397,12 +460,12 @@ def render_main_panel():
 
         with dur_col:
             new_duration = st.text_input(
-                "Duration", value=script.get("duration", "30-45 seconds"), key=f"duration_{idx}"
+                "Duration", value=script.get("duration", "30-45 seconds"), key=f"duration_{idx}_v{v}"
             )
 
         with tone_col:
             new_tone = st.text_input(
-                "Tone", value=script.get("tone", "Professional"), key=f"tone_{idx}"
+                "Tone", value=script.get("tone", "Professional"), key=f"tone_{idx}_v{v}"
             )
 
         # Voice-over text
@@ -410,7 +473,7 @@ def render_main_panel():
             "Voice-Over Script",
             value=script.get("text", ""),
             height=300,
-            key=f"text_{idx}",
+            key=f"text_{idx}_v{v}",
             placeholder="Enter the voiceover script for this slide...",
         )
 
