@@ -16,6 +16,38 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+# Custom CSS for Crimson Pro font (matching website)
+st.markdown(
+    """
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@500&display=swap');
+
+    [data-testid="stLogo"] {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    [data-testid="stLogo"]::after {
+        content: "montaigne";
+        font-family: 'Crimson Pro', Georgia, serif;
+        font-size: 1.4rem;
+        font-weight: 500;
+        letter-spacing: -0.02em;
+        color: #1a1816;
+    }
+
+    /* Dark mode support */
+    @media (prefers-color-scheme: dark) {
+        [data-testid="stLogo"]::after {
+            color: #faf8f5;
+        }
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 st.logo(Path(__file__).parent.parent / "website" / "black-nib.png")
 
 
@@ -383,7 +415,7 @@ def render_sidebar():
 def render_main_panel():
     """Render the main editing panel."""
     if not st.session_state.slides:
-        st.title("🎬 Montaigne")
+        st.title("✒️ Montaigne")
         st.subheader("Presentation Editor")
         st.write("Upload a PDF or select an image folder to get started.")
 
