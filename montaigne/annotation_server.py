@@ -334,18 +334,29 @@ def get_html_template() -> str:
             padding: 0;
         }
 
+        html, body {
+            height: 100%;
+            margin: 0;
+        }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
             background: var(--bg-primary);
             color: var(--text-primary);
             min-height: 100vh;
             transition: background-color 0.3s ease, color 0.3s ease;
+            display: flex;
+            flex-direction: column;
         }
 
         .container {
             max-width: 1400px;
             margin: 0 auto;
             padding: 20px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
         }
 
         header {
@@ -542,6 +553,8 @@ def get_html_template() -> str:
             grid-template-columns: 1fr 350px;
             gap: 20px;
             margin-top: 20px;
+            flex: 1;
+            min-height: 0;
         }
 
         /* Video Player */
@@ -711,7 +724,7 @@ def get_html_template() -> str:
             border-radius: 12px;
             display: flex;
             flex-direction: column;
-            max-height: calc(100vh - 140px);
+            min-height: 0;
             transition: background-color 0.3s ease;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
@@ -1067,7 +1080,7 @@ def get_html_template() -> str:
 <body>
     <header>
         <div class="montaigne-logo">
-            <span class="logo-icon">&#9998;</span>
+            <span class="logo-icon">✒️</span>
             <span class="logo-text">montaigne</span>
             <span class="logo-suffix">Annotate</span>
         </div>
