@@ -150,27 +150,27 @@ class TestAudioCommand:
                     assert call_kwargs.kwargs['voice'] == 'Fenrir'
 
 
-class TestImagesCommand:
-    """Tests for the images command."""
+class TestTranslateCommand:
+    """Tests for the translate command."""
 
-    def test_images_default_language(self, temp_dir):
-        """Images command defaults to French."""
+    def test_translate_default_language(self, temp_dir):
+        """Translate command defaults to French."""
         img_path = temp_dir / "slide.png"
         img_path.touch()
 
-        with patch.object(sys, 'argv', ['essai', 'images', '--input', str(img_path)]):
+        with patch.object(sys, 'argv', ['essai', 'translate', '--input', str(img_path)]):
             with patch('montaigne.config.check_dependencies', return_value=True):
                 with patch('montaigne.images.translate_images') as mock_trans:
                     main()
                     call_kwargs = mock_trans.call_args
                     assert call_kwargs.kwargs['target_lang'] == 'French'
 
-    def test_images_custom_language(self, temp_dir):
-        """Images command respects --lang option."""
+    def test_translate_custom_language(self, temp_dir):
+        """Translate command respects --lang option."""
         img_path = temp_dir / "slide.png"
         img_path.touch()
 
-        with patch.object(sys, 'argv', ['essai', 'images', '--input', str(img_path), '--lang', 'Spanish']):
+        with patch.object(sys, 'argv', ['essai', 'translate', '--input', str(img_path), '--lang', 'Spanish']):
             with patch('montaigne.config.check_dependencies', return_value=True):
                 with patch('montaigne.images.translate_images') as mock_trans:
                     main()
