@@ -144,7 +144,7 @@ def translate_images(
     output_dir: Optional[Path] = None,
     target_lang: str = "French",
     model: Optional[str] = None,
-    add_branding: bool = False,
+    add_branding: bool = True,
     logo_path: Optional[Path] = None,
 ) -> List[Path]:
     """
@@ -155,8 +155,8 @@ def translate_images(
         output_dir: Directory for output (default: {input}_translated/)
         target_lang: Target language
         model: Optional model name (default: gemini-3-pro-image-preview)
-        add_branding: If True, add montaigne.cc logo to bottom right (default: False)
-        logo_path: Optional path to logo image (if None, uses text)
+        add_branding: If True, add montaigne.cc logo to bottom right (default: True)
+        logo_path: Optional path to logo image (default: montaigne amber logo)
 
     Returns:
         List of paths to translated images

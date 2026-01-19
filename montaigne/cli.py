@@ -117,7 +117,7 @@ def cmd_pdf(args):
         output_dir=output_dir,
         dpi=args.dpi,
         image_format=args.format,
-        add_branding=hasattr(args, "add_branding") and args.add_branding,
+        add_branding=not (hasattr(args, "no_branding") and args.no_branding),
         logo_path=logo_path,
     )
 
@@ -229,7 +229,7 @@ def cmd_images(args):
         output_dir=output_dir,
         target_lang=args.lang,
         model=args.model,
-        add_branding=hasattr(args, "add_branding") and args.add_branding,
+        add_branding=not (hasattr(args, "no_branding") and args.no_branding),
         logo_path=logo_path,
     )
 
@@ -252,6 +252,7 @@ def cmd_video(args):
         pdf_path = Path(args.pdf)
         script_path = Path(args.script) if args.script else None
         output_path = Path(args.output) if args.output else None
+        logo_path = Path(args.logo) if hasattr(args, "logo") and args.logo else None
 
         generate_video_from_pdf(
             pdf_path,
@@ -263,6 +264,8 @@ def cmd_video(args):
             context=resolve_context(args.context),
             script_model=args.script_model,
             audio_model=args.audio_model,
+            add_branding=not (hasattr(args, "no_branding") and args.no_branding),
+            logo_path=logo_path,
         )
         return
 
@@ -902,11 +905,13 @@ One-command video:
     pdf_parser.add_argument("--dpi", type=int, default=150, help="Image resolution (default: 150)")
     pdf_parser.add_argument("--format", choices=["png", "jpg"], default="png", help="Output format")
     pdf_parser.add_argument(
-        "--add-branding",
+        "--no-branding",
         action="store_true",
-        help="Add montaigne.cc logo to bottom right of slides",
+        help="Disable montaigne.cc logo branding (enabled by default)",
     )
-    pdf_parser.add_argument("--logo", help="Path to custom logo image (optional)")
+    pdf_parser.add_argument(
+        "--logo", help="Path to custom logo image (default: montaigne amber logo)"
+    )
 
     # Script command
     script_parser = subparsers.add_parser(
@@ -970,11 +975,13 @@ One-command video:
         help="Gemini model for image translation (default: gemini-3-pro-image-preview)",
     )
     translate_parser.add_argument(
-        "--add-branding",
+        "--no-branding",
         action="store_true",
-        help="Add montaigne.cc logo to bottom right of slides",
+        help="Disable montaigne.cc logo branding (enabled by default)",
     )
-    translate_parser.add_argument("--logo", help="Path to custom logo image (optional)")
+    translate_parser.add_argument(
+        "--logo", help="Path to custom logo image (default: montaigne amber logo)"
+    )
 
     # Localize command (full pipeline)
     loc_parser = subparsers.add_parser("localize", help="Full localization pipeline")
@@ -1086,6 +1093,14 @@ Keyboard shortcuts in the annotation UI:
         "--audio-model",
         default=None,
         help="Gemini model for TTS (default: gemini-2.5-pro-preview-tts)",
+    )
+    video_parser.add_argument(
+        "--no-branding",
+        action="store_true",
+        help="Disable montaigne.cc logo branding (enabled by default)",
+    )
+    video_parser.add_argument(
+        "--logo", help="Path to custom logo image (default: montaigne amber logo)"
     )
 
     # Cloud command group

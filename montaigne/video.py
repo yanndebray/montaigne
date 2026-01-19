@@ -256,6 +256,8 @@ def generate_video_from_pdf(
     context: str = "",
     script_model: Optional[str] = None,
     audio_model: Optional[str] = None,
+    add_branding: bool = True,
+    logo_path: Optional[Path] = None,
 ) -> Path:
     """
     Generate a complete video from a PDF presentation.
@@ -270,6 +272,8 @@ def generate_video_from_pdf(
         context: Context for script generation
         script_model: Model for script generation (default: gemini-3-pro-preview)
         audio_model: Model for TTS audio (default: gemini-2.5-pro-preview-tts)
+        add_branding: If True, add montaigne.cc logo to slides (default: True)
+        logo_path: Optional path to logo image (default: montaigne amber logo)
     """
     from .pdf import extract_pdf_pages
     from .scripts import generate_scripts
@@ -284,7 +288,9 @@ def generate_video_from_pdf(
     # Step 1: Extract PDF pages
     logger.info("Step 1: Extracting PDF pages...")
     images_dir = pdf_path.parent / f"{base_name}_images"
-    extract_pdf_pages(pdf_path, output_dir=images_dir)
+    extract_pdf_pages(
+        pdf_path, output_dir=images_dir, add_branding=add_branding, logo_path=logo_path
+    )
 
     # Step 2: Generate script (Pass the context here)
     if script_path is None:

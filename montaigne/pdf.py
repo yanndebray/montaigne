@@ -14,7 +14,7 @@ def extract_pdf_pages(
     output_dir: Optional[Path] = None,
     dpi: int = 150,
     image_format: str = "png",
-    add_branding: bool = False,
+    add_branding: bool = True,
     logo_path: Optional[Path] = None,
 ) -> List[Path]:
     """
@@ -25,8 +25,8 @@ def extract_pdf_pages(
         output_dir: Directory for output images (default: {pdf_stem}_images/)
         dpi: Resolution for extracted images (default: 150)
         image_format: Output format - 'png' or 'jpg' (default: png)
-        add_branding: If True, add montaigne.cc logo to bottom right (default: False)
-        logo_path: Optional path to logo image (if None, uses text)
+        add_branding: If True, add montaigne.cc logo to bottom right (default: True)
+        logo_path: Optional path to logo image (default: montaigne amber logo)
 
     Returns:
         List of paths to extracted image files
