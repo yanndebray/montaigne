@@ -10,7 +10,12 @@ logger = get_logger(__name__)
 
 
 def extract_pdf_pages(
-    pdf_path: Path, output_dir: Optional[Path] = None, dpi: int = 150, image_format: str = "png"
+    pdf_path: Path,
+    output_dir: Optional[Path] = None,
+    dpi: int = 150,
+    image_format: str = "png",
+    add_branding: bool = False,
+    logo_path: Optional[Path] = None,
 ) -> List[Path]:
     """
     Extract all pages from a PDF as individual images.
@@ -20,6 +25,8 @@ def extract_pdf_pages(
         output_dir: Directory for output images (default: {pdf_stem}_images/)
         dpi: Resolution for extracted images (default: 150)
         image_format: Output format - 'png' or 'jpg' (default: png)
+        add_branding: If True, add montaigne.cc logo to bottom right (default: False)
+        logo_path: Optional path to logo image (if None, uses text)
 
     Returns:
         List of paths to extracted image files
@@ -78,6 +85,17 @@ def extract_pdf_pages(
             logger.info("  Extracted: page_%03d%s", page_num + 1, ext)
 
     doc.close()
+
+    # Add branding if requested
+    if add_branding:
+        from .branding import add_branding_overlay
+
+        logger.info("Adding branding to extracted images...")
+        for img_path in extracted_images:
+            try:
+                add_branding_overlay(img_path, output_path=img_path, logo_path=logo_path)
+            except Exception as e:
+                logger.warning("  Failed to add branding to %s: %s", img_path.name, e)
 
     logger.info("Extracted %d pages to %s/", len(extracted_images), output_dir)
     return extracted_images
