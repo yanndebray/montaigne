@@ -1,5 +1,10 @@
 # Montaigne
 
+[![PyPI](https://img.shields.io/pypi/v/montaigne.svg)](https://pypi.org/project/montaigne/)
+[![Tests](https://github.com/yanndebray/montaigne/actions/workflows/test.yml/badge.svg)](https://github.com/yanndebray/montaigne/actions/workflows/test.yml)
+[![Docs](https://img.shields.io/badge/docs-montaigne-7c3aed.svg)](https://yanndebray.github.io/montaigne/)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/yanndebray/montaigne/blob/main/LICENSE)
+
 Media processing toolkit for presentation localization using Google Gemini AI.
 
 ## Features
