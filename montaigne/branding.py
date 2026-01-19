@@ -9,6 +9,27 @@ from .logging import get_logger
 logger = get_logger(__name__)
 
 
+def get_default_logo_path() -> Optional[Path]:
+    """
+    Get the path to the default montaigne amber logo.
+
+    Returns:
+        Path to the logo file, or None if not found
+    """
+    # Try relative to this file (package location)
+    package_dir = Path(__file__).parent.parent
+    logo_path = package_dir / "website" / "montaigne-logo-amber.png"
+    if logo_path.exists():
+        return logo_path
+
+    # Try current working directory
+    cwd_logo = Path.cwd() / "website" / "montaigne-logo-amber.png"
+    if cwd_logo.exists():
+        return cwd_logo
+
+    return None
+
+
 def detect_background_color(
     image: Image.Image, position: str = "bottom_right", sample_size: int = 20
 ) -> Tuple[int, int, int]:
@@ -153,15 +174,29 @@ def add_branding_overlay(
     draw = ImageDraw.Draw(overlay)
 
     # Load or create logo/text
+    # Use default logo if none provided
+    if logo_path is None:
+        logo_path = get_default_logo_path()
+
     if logo_path and Path(logo_path).exists():
         logo_img = Image.open(logo_path)
         if logo_img.mode != "RGBA":
             logo_img = logo_img.convert("RGBA")
 
         # Scale logo to appropriate size (large enough to cover watermarks like NotebookLM)
+        # Use resize instead of thumbnail to scale UP if needed
         max_logo_width = width // 5
         max_logo_height = height // 8
-        logo_img.thumbnail((max_logo_width, max_logo_height), Image.Resampling.LANCZOS)
+
+        # Calculate scale factor maintaining aspect ratio
+        orig_w, orig_h = logo_img.size
+        scale_w = max_logo_width / orig_w
+        scale_h = max_logo_height / orig_h
+        scale = min(scale_w, scale_h)  # Fit within bounds
+
+        new_width = int(orig_w * scale)
+        new_height = int(orig_h * scale)
+        logo_img = logo_img.resize((new_width, new_height), Image.Resampling.LANCZOS)
 
         logo_width, logo_height = logo_img.size
     else:
