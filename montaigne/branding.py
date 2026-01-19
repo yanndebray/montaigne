@@ -95,9 +95,9 @@ def add_branding_overlay(
     output_path: Optional[Path] = None,
     logo_path: Optional[Path] = None,
     position: str = "bottom_right",
-    padding: int = 20,
-    rectangle_padding: int = 10,
-    rectangle_opacity: int = 180,
+    padding: int = 0,
+    rectangle_padding: int = 0,
+    rectangle_opacity: int = 0,
     text: str = "montaigne.cc",
     font_size: int = 24,
 ) -> Path:
@@ -158,9 +158,9 @@ def add_branding_overlay(
         if logo_img.mode != "RGBA":
             logo_img = logo_img.convert("RGBA")
 
-        # Scale logo to appropriate size
-        max_logo_width = width // 8
-        max_logo_height = height // 12
+        # Scale logo to appropriate size (large enough to cover watermarks like NotebookLM)
+        max_logo_width = width // 5
+        max_logo_height = height // 8
         logo_img.thumbnail((max_logo_width, max_logo_height), Image.Resampling.LANCZOS)
 
         logo_width, logo_height = logo_img.size
@@ -204,11 +204,12 @@ def add_branding_overlay(
     else:
         raise ValueError(f"Invalid position: {position}")
 
-    # Draw semi-transparent rectangle
-    draw.rectangle(
-        [(rect_x, rect_y), (rect_x + rect_width, rect_y + rect_height)],
-        fill=rect_color + (rectangle_opacity,),
-    )
+    # Draw semi-transparent rectangle (skip if opacity is 0)
+    if rectangle_opacity > 0:
+        draw.rectangle(
+            [(rect_x, rect_y), (rect_x + rect_width, rect_y + rect_height)],
+            fill=rect_color + (rectangle_opacity,),
+        )
 
     # Add logo or text
     logo_x = rect_x + rectangle_padding
