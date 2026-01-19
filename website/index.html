@@ -820,6 +820,17 @@
                     <h3>Model Configuration</h3>
                     <p>Customize Gemini models for each operation. Use <code>--model</code> flags to switch between flash and pro models based on your needs.</p>
                 </div>
+
+                <div class="feature-card animate-on-scroll">
+                    <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="17 8 12 3 7 8"/>
+                        <line x1="12" y1="3" x2="12" y2="15"/>
+                        <circle cx="12" cy="18" r="2"/>
+                    </svg>
+                    <h3>Video Annotation</h3>
+                    <p>Frame-accurate video and audio annotation tool. Add timestamps, export to WebVTT/SRT formats for captions. Waveform visualization with click-to-seek. Requires <code>pip install montaigne[annotate]</code>.</p>
+                </div>
             </div>
         </section>
 
@@ -948,6 +959,10 @@ main benefits: automation, insights, and scalability.
                     <span class="api-name">essai cloud</span>
                     <span class="api-desc">Cloud deployment commands. Subcommands: <code>health</code> (check API status), <code>video</code> (generate video in cloud), <code>status</code> (check job), <code>download</code> (get output), <code>jobs</code> (list jobs). Requires <code>pip install montaigne[cloud]</code>.</span>
                 </div>
+                <div class="api-item animate-on-scroll">
+                    <span class="api-name">essai annotate</span>
+                    <span class="api-desc">Frame-accurate video/audio annotation tool with waveform visualization. Auto-detects media files in current directory when no input specified. Options: <code>--export srt</code> or <code>--export vtt</code> to export annotations to SRT or WebVTT subtitle formats. Keyboard shortcuts: <kbd>I</kbd>/<kbd>O</kbd> for in/out points, <kbd>[</kbd>/<kbd>]</kbd> for frame stepping. Requires <code>pip install montaigne[annotate]</code>.</span>
+                </div>
             </div>
         </section>
 
@@ -1008,7 +1023,15 @@ main benefits: automation, insights, and scalability.
 <span class="code-string">Extracting PDF pages...</span>
 <span class="code-string">Translating images to French...</span>
 <span class="code-string">Generating audio...</span>
-<span class="code-string">Localization complete!</span></pre>
+<span class="code-string">Localization complete!</span>
+
+<span class="code-comment"># Annotate a video with timestamps</span>
+<span class="code-keyword">$</span> essai annotate recording.mp4
+<span class="code-string">Starting annotation server at http://localhost:5000</span>
+
+<span class="code-comment"># Export annotations to subtitles</span>
+<span class="code-keyword">$</span> essai annotate recording.mp4 --export srt
+<span class="code-string">Exported 24 annotations to recording.srt</span></pre>
             </div>
         </section>
     </main>
