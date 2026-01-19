@@ -11,10 +11,12 @@ Features:
 """
 
 import mimetypes
+import tempfile
 from pathlib import Path
 from typing import Optional
 
 from flask import Flask, jsonify, request, send_file, Response
+from werkzeug.utils import secure_filename
 
 from .annotation import (
     Annotation,
@@ -103,6 +105,70 @@ def create_app(
                 "size": media.stat().st_size,
                 "media_id": get_media_id(media),
                 "mime_type": mimetypes.guess_type(str(media))[0],
+            }
+        )
+
+    @app.route("/api/status")
+    def get_status():
+        """Get current app status including whether media is loaded."""
+        media = app.config["MEDIA_PATH"]
+        has_media = media is not None and media.exists()
+        return jsonify(
+            {
+                "has_media": has_media,
+                "filename": media.name if has_media else None,
+                "mime_type": mimetypes.guess_type(str(media))[0] if has_media else None,
+            }
+        )
+
+    @app.route("/api/upload", methods=["POST"])
+    def upload_media():
+        """Upload a media file for annotation."""
+        if "file" not in request.files:
+            return jsonify({"error": "No file provided"}), 400
+
+        file = request.files["file"]
+        if file.filename == "":
+            return jsonify({"error": "No file selected"}), 400
+
+        # Validate file type
+        allowed_extensions = {
+            ".mp4",
+            ".webm",
+            ".mov",
+            ".avi",
+            ".mkv",
+            ".m4v",
+            ".mp3",
+            ".wav",
+            ".m4a",
+            ".aac",
+            ".ogg",
+            ".flac",
+        }
+        filename = secure_filename(file.filename)
+        ext = Path(filename).suffix.lower()
+
+        if ext not in allowed_extensions:
+            return jsonify({"error": f"Unsupported file type: {ext}"}), 400
+
+        # Save to temp directory
+        temp_dir = Path(tempfile.gettempdir()) / "montaigne_annotate"
+        temp_dir.mkdir(exist_ok=True)
+        temp_path = temp_dir / filename
+
+        file.save(temp_path)
+        app.config["MEDIA_PATH"] = temp_path
+
+        logger.info("Uploaded media file: %s", temp_path)
+
+        return jsonify(
+            {
+                "success": True,
+                "filename": filename,
+                "path": str(temp_path),
+                "media_id": get_media_id(temp_path),
+                "mime_type": mimetypes.guess_type(str(temp_path))[0],
             }
         )
 
@@ -625,6 +691,106 @@ def get_html_template() -> str:
             margin-top: 20px;
         }
 
+        /* Upload Dropzone */
+        .upload-dropzone {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 60px 40px;
+            text-align: center;
+            border: 2px dashed var(--border);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .upload-dropzone:hover,
+        .upload-dropzone.dragover {
+            border-color: var(--accent);
+            background: rgba(233, 69, 96, 0.05);
+        }
+
+        [data-theme="light"] .upload-dropzone:hover,
+        [data-theme="light"] .upload-dropzone.dragover {
+            background: rgba(255, 75, 75, 0.05);
+        }
+
+        .upload-dropzone .upload-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            opacity: 0.6;
+        }
+
+        .upload-dropzone h2 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            color: var(--text-primary);
+        }
+
+        .upload-dropzone p {
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+        }
+
+        .upload-dropzone .supported-formats {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            opacity: 0.7;
+        }
+
+        .upload-dropzone input[type="file"] {
+            display: none;
+        }
+
+        .upload-dropzone.hidden {
+            display: none;
+        }
+
+        .upload-dropzone .upload-btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .upload-dropzone .upload-btn:hover {
+            background: var(--accent-hover);
+        }
+
+        .upload-progress {
+            margin-top: 20px;
+            display: none;
+        }
+
+        .upload-progress.active {
+            display: block;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: var(--accent);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .upload-status {
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
         /* Video Player */
         .player-section {
             background: var(--bg-secondary);
@@ -632,6 +798,10 @@ def get_html_template() -> str:
             overflow: hidden;
             transition: background-color 0.3s ease;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .player-section.hidden {
+            display: none;
         }
 
         [data-theme="light"] .player-section {
@@ -1157,10 +1327,30 @@ def get_html_template() -> str:
 
     <div class="container">
         <div class="main-content">
-            <div class="player-section">
+            <!-- Upload Dropzone (shown when no media is loaded) -->
+            <div class="upload-dropzone" id="upload-dropzone">
+                <div class="upload-icon">&#128249;</div>
+                <h2>Drop your video or audio file here</h2>
+                <p>or click to browse</p>
+                <button class="upload-btn" onclick="document.getElementById('file-input').click()">
+                    Choose File
+                </button>
+                <input type="file" id="file-input" accept="video/*,audio/*" onchange="handleFileSelect(event)">
+                <div class="upload-progress" id="upload-progress">
+                    <div class="progress-bar">
+                        <div class="progress-bar-fill" id="progress-bar-fill"></div>
+                    </div>
+                    <div class="upload-status" id="upload-status">Uploading...</div>
+                </div>
+                <p class="supported-formats">
+                    Supported: MP4, WebM, MOV, AVI, MKV, MP3, WAV, M4A, AAC, OGG, FLAC
+                </p>
+            </div>
+
+            <div class="player-section hidden" id="player-section">
                 <div class="video-container">
                     <video id="video-player" class="video-js" controls preload="auto">
-                        <source src="/media" type="video/mp4">
+                        <source src="/media" type="video/mp4" id="video-source">
                     </video>
                 </div>
 
@@ -1851,9 +2041,130 @@ def get_html_template() -> str:
         }
 
         // ==========================================================================
+        // File Upload Handling
+        // ==========================================================================
+        const dropzone = document.getElementById('upload-dropzone');
+        const playerSection = document.getElementById('player-section');
+        const fileInput = document.getElementById('file-input');
+        const uploadProgress = document.getElementById('upload-progress');
+        const progressBarFill = document.getElementById('progress-bar-fill');
+        const uploadStatus = document.getElementById('upload-status');
+
+        // Drag and drop handlers
+        dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropzone.classList.add('dragover');
+        });
+
+        dropzone.addEventListener('dragleave', () => {
+            dropzone.classList.remove('dragover');
+        });
+
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                uploadFile(files[0]);
+            }
+        });
+
+        // Click to select file
+        dropzone.addEventListener('click', (e) => {
+            if (e.target.tagName !== 'BUTTON' && e.target.tagName !== 'INPUT') {
+                fileInput.click();
+            }
+        });
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                uploadFile(file);
+            }
+        }
+
+        async function uploadFile(file) {
+            uploadProgress.classList.add('active');
+            progressBarFill.style.width = '0%';
+            uploadStatus.textContent = 'Uploading...';
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const xhr = new XMLHttpRequest();
+
+                xhr.upload.addEventListener('progress', (e) => {
+                    if (e.lengthComputable) {
+                        const percent = Math.round((e.loaded / e.total) * 100);
+                        progressBarFill.style.width = percent + '%';
+                        uploadStatus.textContent = `Uploading... ${percent}%`;
+                    }
+                });
+
+                xhr.addEventListener('load', async () => {
+                    if (xhr.status === 200) {
+                        const response = JSON.parse(xhr.responseText);
+                        uploadStatus.textContent = 'Processing...';
+                        progressBarFill.style.width = '100%';
+
+                        // Hide dropzone, show player
+                        dropzone.classList.add('hidden');
+                        playerSection.classList.remove('hidden');
+
+                        // Initialize player with new media
+                        await initPlayer();
+                        showToast(`Loaded: ${response.filename}`);
+                    } else {
+                        const error = JSON.parse(xhr.responseText);
+                        uploadStatus.textContent = `Error: ${error.error}`;
+                        progressBarFill.style.width = '0%';
+                        showToast(error.error, 'error');
+                    }
+                });
+
+                xhr.addEventListener('error', () => {
+                    uploadStatus.textContent = 'Upload failed';
+                    progressBarFill.style.width = '0%';
+                    showToast('Upload failed', 'error');
+                });
+
+                xhr.open('POST', '/api/upload');
+                xhr.send(formData);
+            } catch (error) {
+                uploadStatus.textContent = 'Upload failed';
+                showToast('Upload failed: ' + error.message, 'error');
+            }
+        }
+
+        // ==========================================================================
         // Initialize
         // ==========================================================================
-        document.addEventListener('DOMContentLoaded', initPlayer);
+        async function init() {
+            // Check if media is already loaded
+            try {
+                const response = await fetch('/api/status');
+                const status = await response.json();
+
+                if (status.has_media) {
+                    // Media is loaded, show player
+                    dropzone.classList.add('hidden');
+                    playerSection.classList.remove('hidden');
+                    await initPlayer();
+                } else {
+                    // No media, show upload dropzone
+                    dropzone.classList.remove('hidden');
+                    playerSection.classList.add('hidden');
+                }
+            } catch (error) {
+                console.error('Failed to check status:', error);
+                // Show dropzone by default on error
+                dropzone.classList.remove('hidden');
+                playerSection.classList.add('hidden');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
 </html>
@@ -1861,7 +2172,7 @@ def get_html_template() -> str:
 
 
 def run_server(
-    media_path: Path,
+    media_path: Optional[Path] = None,
     host: str = "127.0.0.1",
     port: int = 8765,
     db_path: Optional[Path] = None,
@@ -1872,7 +2183,10 @@ def run_server(
 
     url = f"http://{host}:{port}"
     logger.info("Starting annotation server at %s", url)
-    logger.info("Media: %s", media_path.name)
+    if media_path:
+        logger.info("Media: %s", media_path.name)
+    else:
+        logger.info("No media loaded - upload via web interface")
 
     if open_browser:
         import webbrowser

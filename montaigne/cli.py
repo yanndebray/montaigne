@@ -649,7 +649,7 @@ def cmd_annotate(args):
 
     logger.info("=== Video Annotation Tool ===")
 
-    # Find media file
+    # Find media file (optional for interactive mode)
     media_path = Path(args.input) if args.input else None
 
     if media_path is None:
@@ -663,19 +663,21 @@ def cmd_annotate(args):
         if media_files:
             media_path = media_files[0]
             logger.info("Auto-detected: %s", media_path.name)
-        else:
-            logger.error("No video/audio file found. Use --input to specify one.")
+        # If no media found, continue without it (standalone mode)
+
+    # Resolve to absolute path for Flask compatibility (if media exists)
+    if media_path is not None:
+        media_path = media_path.resolve()
+        if not media_path.exists():
+            logger.error("File not found: %s", media_path)
             sys.exit(1)
 
-    # Resolve to absolute path for Flask compatibility
-    media_path = media_path.resolve()
-
-    if not media_path.exists():
-        logger.error("File not found: %s", media_path)
-        sys.exit(1)
-
-    # Handle export mode (non-interactive)
+    # Handle export mode (non-interactive) - requires media file
     if args.export:
+        if media_path is None:
+            logger.error("Export requires a media file. Use --input to specify one.")
+            sys.exit(1)
+
         from .annotation import (
             AnnotationStore,
             get_media_id,
