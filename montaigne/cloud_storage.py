@@ -17,6 +17,7 @@ def _get_storage_client():
     global _storage_client
     if _storage_client is None:
         from google.cloud import storage
+
         _storage_client = storage.Client()
     return _storage_client
 
@@ -70,9 +71,7 @@ def get_bucket_name() -> str:
         if project_id:
             bucket = f"montaigne-{project_id}"
         else:
-            raise ValueError(
-                "GCS_BUCKET or GCP_PROJECT_ID environment variable must be set"
-            )
+            raise ValueError("GCS_BUCKET or GCP_PROJECT_ID environment variable must be set")
     return bucket
 
 
@@ -85,6 +84,7 @@ def get_bucket():
 def generate_job_id() -> str:
     """Generate a unique job ID with timestamp and random suffix."""
     import secrets
+
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
     suffix = secrets.token_hex(4)
     return f"{timestamp}_{suffix}"
@@ -116,6 +116,7 @@ def _get_signing_info() -> tuple[Optional[str], Optional[str]]:
         credentials, _ = google.auth.default()
         if isinstance(credentials, compute_engine.Credentials):
             from google.auth.transport import requests as auth_requests
+
             request = auth_requests.Request()
             credentials.refresh(request)
             return credentials.service_account_email, credentials.token
@@ -296,12 +297,14 @@ def list_job_files(job_id: str, folder: Optional[str] = None) -> list[dict]:
 
     files = []
     for blob in bucket.list_blobs(prefix=prefix + "/"):
-        files.append({
-            "name": blob.name.split("/")[-1],
-            "path": blob.name,
-            "size_bytes": blob.size,
-            "updated": blob.updated.isoformat() if blob.updated else None,
-        })
+        files.append(
+            {
+                "name": blob.name.split("/")[-1],
+                "path": blob.name,
+                "size_bytes": blob.size,
+                "updated": blob.updated.isoformat() if blob.updated else None,
+            }
+        )
 
     return files
 
@@ -326,6 +329,7 @@ def delete_job(job_id: str) -> int:
 
 
 # Job status management
+
 
 def get_job_status(job_id: str) -> Optional[dict]:
     """Get the status of a job from status.json.
@@ -399,7 +403,9 @@ def update_job_status(
     if step or current is not None or total is not None or message:
         existing["progress"] = {
             "step": step or existing.get("progress", {}).get("step"),
-            "current": current if current is not None else existing.get("progress", {}).get("current"),
+            "current": (
+                current if current is not None else existing.get("progress", {}).get("current")
+            ),
             "total": total if total is not None else existing.get("progress", {}).get("total"),
             "message": message or existing.get("progress", {}).get("message"),
         }

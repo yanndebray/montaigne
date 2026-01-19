@@ -96,13 +96,15 @@ def create_app(
         if not media or not media.exists():
             return jsonify({"error": "No media file configured"}), 404
 
-        return jsonify({
-            "filename": media.name,
-            "path": str(media),
-            "size": media.stat().st_size,
-            "media_id": get_media_id(media),
-            "mime_type": mimetypes.guess_type(str(media))[0],
-        })
+        return jsonify(
+            {
+                "filename": media.name,
+                "path": str(media),
+                "size": media.stat().st_size,
+                "media_id": get_media_id(media),
+                "mime_type": mimetypes.guess_type(str(media))[0],
+            }
+        )
 
     # ==========================================================================
     # Annotation API
@@ -128,11 +130,13 @@ def create_app(
             category=AnnotationCategory(category) if category else None,
         )
 
-        return jsonify({
-            "media_id": media_id,
-            "count": len(annotations),
-            "annotations": [ann.to_dict() for ann in annotations],
-        })
+        return jsonify(
+            {
+                "media_id": media_id,
+                "count": len(annotations),
+                "annotations": [ann.to_dict() for ann in annotations],
+            }
+        )
 
     @app.route("/api/annotations", methods=["POST"])
     def create_annotation():
@@ -225,10 +229,12 @@ def create_app(
 
         annotations = store.get_at_time(media_id, time_ms)
 
-        return jsonify({
-            "time_ms": time_ms,
-            "annotations": [ann.to_dict() for ann in annotations],
-        })
+        return jsonify(
+            {
+                "time_ms": time_ms,
+                "annotations": [ann.to_dict() for ann in annotations],
+            }
+        )
 
     # ==========================================================================
     # Export Endpoints
@@ -277,7 +283,7 @@ def create_app(
 
 def get_html_template() -> str:
     """Return the main HTML template for the annotation interface."""
-    return '''<!DOCTYPE html>
+    return """<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -1851,7 +1857,7 @@ def get_html_template() -> str:
     </script>
 </body>
 </html>
-'''
+"""
 
 
 def run_server(
@@ -1874,6 +1880,7 @@ def run_server(
 
         def open_browser_delayed():
             import time
+
             time.sleep(1)
             webbrowser.open(url)
 

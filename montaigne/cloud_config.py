@@ -28,9 +28,7 @@ def get_gcs_bucket() -> str:
         if project:
             bucket = f"montaigne-{project}"
         else:
-            raise ValueError(
-                "GCS_BUCKET or GCP_PROJECT_ID environment variable must be set"
-            )
+            raise ValueError("GCS_BUCKET or GCP_PROJECT_ID environment variable must be set")
     return bucket
 
 

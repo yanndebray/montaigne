@@ -7,16 +7,17 @@ from typing import Optional
 # Package logger
 logger = logging.getLogger("montaigne")
 
+
 # Custom formatter with colors for terminal
 class ColoredFormatter(logging.Formatter):
     """Formatter that adds colors to log levels for terminal output."""
 
     COLORS = {
-        logging.DEBUG: "\033[36m",    # Cyan
-        logging.INFO: "\033[32m",     # Green
+        logging.DEBUG: "\033[36m",  # Cyan
+        logging.INFO: "\033[32m",  # Green
         logging.WARNING: "\033[33m",  # Yellow
-        logging.ERROR: "\033[31m",    # Red
-        logging.CRITICAL: "\033[35m", # Magenta
+        logging.ERROR: "\033[31m",  # Red
+        logging.CRITICAL: "\033[35m",  # Magenta
     }
     RESET = "\033[0m"
 

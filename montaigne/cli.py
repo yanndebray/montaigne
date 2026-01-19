@@ -692,7 +692,11 @@ def cmd_annotate(args):
             logger.error("No annotations found for: %s", media_path.name)
             sys.exit(1)
 
-        output_path = Path(args.output) if args.output else Path(f"{media_path.stem}_annotations.{args.export}")
+        output_path = (
+            Path(args.output)
+            if args.output
+            else Path(f"{media_path.stem}_annotations.{args.export}")
+        )
 
         if args.export == "vtt":
             export_to_webvtt(annotations, output_path)
@@ -714,6 +718,7 @@ def cmd_annotate(args):
 
     if args.network:
         import socket
+
         try:
             # Get local IP for display
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -990,15 +995,21 @@ Keyboard shortcuts in the annotation UI:
         """,
     )
     annotate_parser.add_argument("input", nargs="?", help="Video or audio file to annotate")
-    annotate_parser.add_argument("--host", default="127.0.0.1", help="Server host (default: 127.0.0.1)")
-    annotate_parser.add_argument("--port", "-p", type=int, default=8765, help="Server port (default: 8765)")
+    annotate_parser.add_argument(
+        "--host", default="127.0.0.1", help="Server host (default: 127.0.0.1)"
+    )
+    annotate_parser.add_argument(
+        "--port", "-p", type=int, default=8765, help="Server port (default: 8765)"
+    )
     annotate_parser.add_argument(
         "--network",
         action="store_true",
         help="Make server accessible on the network (binds to 0.0.0.0)",
     )
     annotate_parser.add_argument("--db", help="Custom SQLite database path for annotations")
-    annotate_parser.add_argument("--no-browser", action="store_true", help="Don't auto-open browser")
+    annotate_parser.add_argument(
+        "--no-browser", action="store_true", help="Don't auto-open browser"
+    )
     annotate_parser.add_argument(
         "--export",
         "-e",

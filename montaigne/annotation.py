@@ -20,6 +20,7 @@ from typing import Optional
 
 class AnnotationCategory(str, Enum):
     """Annotation categories for filtering and organization."""
+
     GENERAL = "general"
     PACING = "pacing"
     PRONUNCIATION = "pronunciation"
@@ -31,6 +32,7 @@ class AnnotationCategory(str, Enum):
 
 class AnnotationStatus(str, Enum):
     """Status tracking for annotation workflow."""
+
     OPEN = "open"
     IN_PROGRESS = "in_progress"
     RESOLVED = "resolved"
@@ -45,6 +47,7 @@ class Annotation:
     Uses milliseconds as integers for frame-accurate sync without floating-point drift.
     Shape coordinates are normalized percentages (0.0-1.0) for resolution-independent overlays.
     """
+
     id: str
     media_id: str
     start_ms: int  # Integer milliseconds for precision
@@ -135,7 +138,8 @@ class AnnotationStore:
     def _init_db(self):
         """Initialize database schema."""
         with sqlite3.connect(self.db_path) as conn:
-            conn.execute("""
+            conn.execute(
+                """
                 CREATE TABLE IF NOT EXISTS annotations (
                     id TEXT PRIMARY KEY,
                     media_id TEXT NOT NULL,
@@ -151,15 +155,20 @@ class AnnotationStore:
                     parent_id TEXT,
                     metadata TEXT DEFAULT '{}'
                 )
-            """)
-            conn.execute("""
+            """
+            )
+            conn.execute(
+                """
                 CREATE INDEX IF NOT EXISTS idx_media_time
                 ON annotations(media_id, start_ms)
-            """)
-            conn.execute("""
+            """
+            )
+            conn.execute(
+                """
                 CREATE INDEX IF NOT EXISTS idx_media_status
                 ON annotations(media_id, status)
-            """)
+            """
+            )
             conn.commit()
 
     def save(self, annotation: Annotation) -> Annotation:
@@ -167,26 +176,29 @@ class AnnotationStore:
         annotation.updated_at = datetime.utcnow().isoformat()
 
         with sqlite3.connect(self.db_path) as conn:
-            conn.execute("""
+            conn.execute(
+                """
                 INSERT OR REPLACE INTO annotations
                 (id, media_id, start_ms, end_ms, text, category, status,
                  author, created_at, updated_at, shape, parent_id, metadata)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                annotation.id,
-                annotation.media_id,
-                annotation.start_ms,
-                annotation.end_ms,
-                annotation.text,
-                annotation.category.value,
-                annotation.status.value,
-                annotation.author,
-                annotation.created_at,
-                annotation.updated_at,
-                json.dumps(annotation.shape) if annotation.shape else None,
-                annotation.parent_id,
-                json.dumps(annotation.metadata),
-            ))
+            """,
+                (
+                    annotation.id,
+                    annotation.media_id,
+                    annotation.start_ms,
+                    annotation.end_ms,
+                    annotation.text,
+                    annotation.category.value,
+                    annotation.status.value,
+                    annotation.author,
+                    annotation.created_at,
+                    annotation.updated_at,
+                    json.dumps(annotation.shape) if annotation.shape else None,
+                    annotation.parent_id,
+                    json.dumps(annotation.metadata),
+                ),
+            )
             conn.commit()
 
         # Invalidate bucket cache for this media
@@ -199,8 +211,7 @@ class AnnotationStore:
         with sqlite3.connect(self.db_path) as conn:
             conn.row_factory = sqlite3.Row
             row = conn.execute(
-                "SELECT * FROM annotations WHERE id = ?",
-                (annotation_id,)
+                "SELECT * FROM annotations WHERE id = ?", (annotation_id,)
             ).fetchone()
 
             if row:
@@ -212,8 +223,7 @@ class AnnotationStore:
         with sqlite3.connect(self.db_path) as conn:
             # Get media_id for cache invalidation
             row = conn.execute(
-                "SELECT media_id FROM annotations WHERE id = ?",
-                (annotation_id,)
+                "SELECT media_id FROM annotations WHERE id = ?", (annotation_id,)
             ).fetchone()
 
             if row:
@@ -316,6 +326,7 @@ class AnnotationStore:
 # Export Functions
 # =============================================================================
 
+
 def ms_to_timecode(ms: int, format: str = "vtt") -> str:
     """
     Convert milliseconds to timecode string.
@@ -332,7 +343,9 @@ def ms_to_timecode(ms: int, format: str = "vtt") -> str:
     seconds, milliseconds = divmod(remainder, 1000)
 
     separator = "." if format == "vtt" else ","
-    return f"{int(hours):02d}:{int(minutes):02d}:{int(seconds):02d}{separator}{int(milliseconds):03d}"
+    return (
+        f"{int(hours):02d}:{int(minutes):02d}:{int(seconds):02d}{separator}{int(milliseconds):03d}"
+    )
 
 
 def export_to_webvtt(
@@ -435,6 +448,7 @@ def import_from_json(json_path: Path, store: AnnotationStore) -> list[Annotation
 # =============================================================================
 # Utility Functions
 # =============================================================================
+
 
 def get_frame_duration_ms(fps: float) -> float:
     """Get duration of a single frame in milliseconds."""

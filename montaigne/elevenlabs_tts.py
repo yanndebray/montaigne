@@ -8,6 +8,7 @@ logger = get_logger(__name__)
 
 class ElevenLabsQuotaError(Exception):
     """Raised when ElevenLabs API quota/credits are exhausted."""
+
     pass
 
 
@@ -16,10 +17,11 @@ ELEVENLABS_VOICES = {
     "adam": "6FiCmD8eY5VyjOdG5Zjk",
     "bob": "3nzyRCzDIWOtbkzj2qvj",
     "william": "8Es4wFxsDlHBmFWAOWRS",
-    "george": "JBFqnCBsd6RMkjVDRZzb"
+    "george": "JBFqnCBsd6RMkjVDRZzb",
 }
 
 ELEVENLABS_MODEL_ID = "eleven_multilingual_v2"
+
 
 def resolve_voice_id(voice: str, client) -> str:
     """Resolve a voice name or ID to a voice ID.
@@ -47,10 +49,7 @@ def resolve_voice_id(voice: str, client) -> str:
 
 
 def generate_slide_audio_elevenlabs(
-    text: str,
-    output_path: Path,
-    voice: str = "george",
-    client=None
+    text: str, output_path: Path, voice: str = "george", client=None
 ) -> Path:
     """Generate audio using ElevenLabs API and convert to WAV for consistency.
 
@@ -87,7 +86,10 @@ def generate_slide_audio_elevenlabs(
     except Exception as e:
         error_msg = str(e).lower()
         # Check for quota/credit related errors
-        if any(term in error_msg for term in ["quota", "credit", "limit", "exceeded", "insufficient", "401", "429"]):
+        if any(
+            term in error_msg
+            for term in ["quota", "credit", "limit", "exceeded", "insufficient", "401", "429"]
+        ):
             raise ElevenLabsQuotaError(
                 "ElevenLabs API quota exceeded. You may have run out of credits. "
                 "Check your usage at https://elevenlabs.io/subscription"
@@ -98,8 +100,7 @@ def generate_slide_audio_elevenlabs(
 
     # Use ffmpeg for the conversion
     result = subprocess.run(
-        ["ffmpeg", "-y", "-i", str(temp_mp3), str(wav_path)],
-        capture_output=True
+        ["ffmpeg", "-y", "-i", str(temp_mp3), str(wav_path)], capture_output=True
     )
 
     if temp_mp3.exists():

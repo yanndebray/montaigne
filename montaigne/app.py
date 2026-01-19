@@ -68,18 +68,16 @@ with open(_logo_path, "rb") as f:
     _logo_b64 = base64.b64encode(f.read()).decode()
 
 st.sidebar.markdown(
-    f'''<div class="montaigne-logo">
+    f"""<div class="montaigne-logo">
         <img src="data:image/png;base64,{_logo_b64}" alt="logo">
         <span>montaigne</span>
         <span class="logo-suffix">edit</span>
-    </div>''',
+    </div>""",
     unsafe_allow_html=True,
 )
 
 
-def extract_pdf_to_images(
-    pdf_path: Path, output_dir: Path, progress_callback=None
-) -> List[Path]:
+def extract_pdf_to_images(pdf_path: Path, output_dir: Path, progress_callback=None) -> List[Path]:
     """Extract PDF pages to images using PyMuPDF."""
     import fitz
 
@@ -268,7 +266,9 @@ def generate_thumbnails_for_slides(slides: List[Path]) -> None:
     progress_bar = st.progress(0, text="Generating thumbnails...")
     for i, slide_path in enumerate(slides):
         get_cached_thumbnail(slide_path)
-        progress_bar.progress((i + 1) / len(slides), text=f"Generating thumbnail {i + 1}/{len(slides)}")
+        progress_bar.progress(
+            (i + 1) / len(slides), text=f"Generating thumbnail {i + 1}/{len(slides)}"
+        )
     progress_bar.empty()
 
 
@@ -298,7 +298,9 @@ def render_sidebar():
                 progress_bar = st.progress(0, text="Extracting slides...")
 
                 def update_progress(current, total):
-                    progress_bar.progress(current / total, text=f"Extracting slide {current}/{total}")
+                    progress_bar.progress(
+                        current / total, text=f"Extracting slide {current}/{total}"
+                    )
 
                 images = extract_pdf_to_images(pdf_path, images_dir, update_progress)
                 progress_bar.empty()
@@ -521,7 +523,9 @@ def render_main_panel():
 
         with dur_col:
             new_duration = st.text_input(
-                "Duration", value=script.get("duration", "30-45 seconds"), key=f"duration_{idx}_v{v}"
+                "Duration",
+                value=script.get("duration", "30-45 seconds"),
+                key=f"duration_{idx}_v{v}",
             )
 
         with tone_col:

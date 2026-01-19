@@ -15,8 +15,10 @@ from .video import check_ffmpeg
 
 # Pydantic models for API requests/responses
 
+
 class UploadUrlRequest(BaseModel):
     """Request for generating a signed upload URL."""
+
     filename: str = Field(..., description="Name of the file to upload")
     content_type: str = Field(default="application/pdf", description="MIME type")
     size_bytes: Optional[int] = Field(default=None, description="File size in bytes")
@@ -24,6 +26,7 @@ class UploadUrlRequest(BaseModel):
 
 class UploadUrlResponse(BaseModel):
     """Response with signed upload URL."""
+
     job_id: str
     upload_url: str
     gcs_path: str
@@ -32,6 +35,7 @@ class UploadUrlResponse(BaseModel):
 
 class StartJobRequest(BaseModel):
     """Request to start processing a job."""
+
     pipeline: str = Field(default="video", description="Pipeline: video, localize, script, audio")
     resolution: str = Field(default="1920:1080", description="Video resolution")
     voice: str = Field(default="Orus", description="TTS voice")
@@ -41,6 +45,7 @@ class StartJobRequest(BaseModel):
 
 class JobStatusResponse(BaseModel):
     """Response with job status."""
+
     job_id: str
     status: str
     pipeline: Optional[str] = None
@@ -55,6 +60,7 @@ class JobStatusResponse(BaseModel):
 
 class DownloadResponse(BaseModel):
     """Response with signed download URL."""
+
     download_url: str
     filename: str
     size_bytes: int
@@ -63,6 +69,7 @@ class DownloadResponse(BaseModel):
 
 class HealthResponse(BaseModel):
     """Health check response."""
+
     status: str
     version: str
     ffmpeg: bool
@@ -206,8 +213,7 @@ async def get_download_url(job_id: str, file: str = "video"):
 
     if status.get("status") != "completed":
         raise HTTPException(
-            status_code=400,
-            detail=f"Job is not completed. Current status: {status.get('status')}"
+            status_code=400, detail=f"Job is not completed. Current status: {status.get('status')}"
         )
 
     # Determine folder and find file
@@ -273,12 +279,14 @@ async def list_jobs(limit: int = 20, status: Optional[str] = None):
             job_status = get_job_status(job_id)
             if job_status:
                 if status is None or job_status.get("status") == status:
-                    jobs.append({
-                        "job_id": job_id,
-                        "status": job_status.get("status"),
-                        "pipeline": job_status.get("pipeline"),
-                        "created_at": job_status.get("created_at"),
-                    })
+                    jobs.append(
+                        {
+                            "job_id": job_id,
+                            "status": job_status.get("status"),
+                            "pipeline": job_status.get("pipeline"),
+                            "created_at": job_status.get("created_at"),
+                        }
+                    )
 
             if len(jobs) >= limit:
                 break
