@@ -1,5 +1,6 @@
 """Streamlit web app for presentation slide editing and voiceover script management."""
 
+import base64
 import os
 import re
 import tempfile
@@ -62,8 +63,6 @@ st.markdown(
 
 # Logo with text in sidebar
 _logo_path = Path(__file__).parent.parent / "website" / "black-nib.png"
-import base64
-
 with open(_logo_path, "rb") as f:
     _logo_b64 = base64.b64encode(f.read()).decode()
 

@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks
-from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from . import __version__
@@ -332,8 +331,6 @@ def process_video_job(
         upload_file,
         update_job_status,
         generate_signed_download_url,
-        get_bucket_name,
-        get_job_path,
     )
     from .pdf import extract_pdf_pages
     from .scripts import generate_scripts

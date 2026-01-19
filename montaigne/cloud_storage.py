@@ -30,7 +30,6 @@ def _get_signing_credentials():
 
     import google.auth
     from google.auth import compute_engine
-    from google.auth.transport import requests
 
     credentials, project = google.auth.default()
 
