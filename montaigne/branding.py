@@ -16,16 +16,11 @@ def get_default_logo_path() -> Optional[Path]:
     Returns:
         Path to the logo file, or None if not found
     """
-    # Try relative to this file (package location)
-    package_dir = Path(__file__).parent.parent
-    logo_path = package_dir / "website" / "montaigne-logo-amber.png"
+    # Try assets folder within the package
+    package_dir = Path(__file__).parent
+    logo_path = package_dir / "assets" / "montaigne-logo-amber.png"
     if logo_path.exists():
         return logo_path
-
-    # Try current working directory
-    cwd_logo = Path.cwd() / "website" / "montaigne-logo-amber.png"
-    if cwd_logo.exists():
-        return cwd_logo
 
     return None
 
@@ -183,10 +178,10 @@ def add_branding_overlay(
         if logo_img.mode != "RGBA":
             logo_img = logo_img.convert("RGBA")
 
-        # Scale logo to appropriate size (large enough to cover watermarks like NotebookLM)
+        # Scale logo to appropriate size (covers watermarks but not too large)
         # Use resize instead of thumbnail to scale UP if needed
-        max_logo_width = width // 5
-        max_logo_height = height // 8
+        max_logo_width = width // 10
+        max_logo_height = height // 15
 
         # Calculate scale factor maintaining aspect ratio
         orig_w, orig_h = logo_img.size
