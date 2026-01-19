@@ -11,7 +11,11 @@
       "mcp__github__add_issue_comment",
       "Bash(black:*)",
       "Bash(find:*)",
-      "Bash(gh release view:*)"
+      "Bash(gh release view:*)",
+      "Bash(ffmpeg:*)",
+      "Bash(ffprobe:*)",
+      "Bash(python -c:*)",
+      "Bash(ruff check:*)"
     ]
   }
 }
