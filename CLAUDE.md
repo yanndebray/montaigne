@@ -35,7 +35,7 @@ essai setup              # Verify API key and dependencies
 essai pdf input.pdf      # Extract PDF to images
 essai script --input presentation.pdf --context "Topic description"
 essai audio --script voiceover.md --voice Orus
-essai images --input slides/ --lang French
+essai translate --input slides/ --lang French
 essai ppt --input presentation.pdf --script voiceover.md
 essai video --pdf presentation.pdf
 essai localize --pdf presentation.pdf --lang French
@@ -43,7 +43,7 @@ essai localize --pdf presentation.pdf --lang French
 # Using custom models (override defaults)
 essai script --input presentation.pdf --model gemini-2.5-flash
 essai audio --script voiceover.md --model gemini-2.5-flash-preview-tts
-essai images --input slides/ --model gemini-2.0-flash-exp
+essai translate --input slides/ --model gemini-2.0-flash-exp
 
 # Video annotation tool
 pip install -e ".[annotate]"   # Install annotation dependencies
@@ -104,7 +104,7 @@ Each AI command supports a `--model` / `-m` flag to override the default Gemini 
 |---------|---------------|------|
 | `essai script` | `gemini-3-pro-preview` | `--model` / `-m` |
 | `essai audio` | `gemini-2.5-pro-preview-tts` | `--model` / `-m` |
-| `essai images` | `gemini-3-pro-image-preview` | `--model` / `-m` |
+| `essai translate` | `gemini-3-pro-image-preview` | `--model` / `-m` |
 
 Example: `essai script --input slides.pdf --model gemini-2.5-flash`
 

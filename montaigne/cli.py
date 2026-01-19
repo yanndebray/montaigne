@@ -829,7 +829,7 @@ Examples:
   essai script --input presentation.pdf # Generate voiceover script from PDF
   essai audio --script voiceover.md     # Generate audio from script
   essai video --pdf presentation.pdf    # Generate video from PDF (full pipeline)
-  essai images --input slides/          # Translate images
+  essai translate --input slides/       # Translate images
   essai ppt --input presentation.pdf    # Convert PDF to PowerPoint
   essai ppt --input slides/ --script voiceover.md  # Images to PPT with notes
   essai localize --pdf deck.pdf --script script.md --lang Spanish
@@ -929,14 +929,16 @@ One-command video:
         help="Gemini model for TTS (default: gemini-2.5-pro-preview-tts)",
     )
 
-    # Images command
-    images_parser = subparsers.add_parser("images", help="Translate images")
-    images_parser.add_argument("--input", "-i", help="Input image file or folder")
-    images_parser.add_argument("--output", "-o", help="Output directory")
-    images_parser.add_argument(
+    # Translate command (image translation)
+    translate_parser = subparsers.add_parser(
+        "translate", help="Translate images to another language"
+    )
+    translate_parser.add_argument("--input", "-i", help="Input image file or folder")
+    translate_parser.add_argument("--output", "-o", help="Output directory")
+    translate_parser.add_argument(
         "--lang", "-l", default="French", help="Target language (default: French)"
     )
-    images_parser.add_argument(
+    translate_parser.add_argument(
         "--model",
         "-m",
         default=None,
@@ -1152,7 +1154,7 @@ Environment:
         "script": cmd_script,
         "audio": cmd_audio,
         "video": cmd_video,
-        "images": cmd_images,
+        "translate": cmd_images,
         "localize": cmd_localize,
         "ppt": cmd_ppt,
         "annotate": cmd_annotate,

@@ -2,7 +2,6 @@
 
 [![PyPI](https://img.shields.io/pypi/v/montaigne.svg)](https://pypi.org/project/montaigne/)
 [![Tests](https://github.com/yanndebray/montaigne/actions/workflows/test.yml/badge.svg)](https://github.com/yanndebray/montaigne/actions/workflows/test.yml)
-[![Docs](https://img.shields.io/badge/docs-montaigne-7c3aed.svg)](https://yanndebray.github.io/montaigne/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/yanndebray/montaigne/blob/main/LICENSE)
 
 Media processing toolkit for presentation localization using Google Gemini AI.
@@ -106,9 +105,9 @@ Options:
 ### Translate Images
 
 ```bash
-essai images --input slides/
-essai images --input image.png --lang Spanish
-essai images --input slides/ --model gemini-2.0-flash-exp
+essai translate --input slides/
+essai translate --input image.png --lang Spanish
+essai translate --input slides/ --model gemini-2.0-flash-exp
 ```
 
 Options:
@@ -202,7 +201,7 @@ Each AI command supports a `--model` / `-m` flag to override the default Gemini 
 |---------|---------------|---------|
 | `essai script` | `gemini-3-pro-preview` | Script generation |
 | `essai audio` | `gemini-2.5-pro-preview-tts` | Text-to-speech |
-| `essai images` | `gemini-3-pro-image-preview` | Image translation |
+| `essai translate` | `gemini-3-pro-image-preview` | Image translation |
 
 List available models:
 ```bash
