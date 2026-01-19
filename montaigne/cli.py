@@ -635,6 +635,104 @@ def cmd_cloud_jobs(args):
         )
 
 
+def cmd_annotate(args):
+    """Launch the video/audio annotation tool."""
+    from pathlib import Path
+
+    # Check for Flask dependency
+    try:
+        import flask  # noqa: F401
+    except ImportError:
+        logger.error("Flask not installed. Install with:")
+        logger.error("  pip install montaigne[annotate]")
+        sys.exit(1)
+
+    logger.info("=== Video Annotation Tool ===")
+
+    # Find media file
+    media_path = Path(args.input) if args.input else None
+
+    if media_path is None:
+        cwd = Path.cwd()
+        # Auto-detect video/audio files
+        video_exts = {".mp4", ".webm", ".mov", ".avi", ".mkv", ".m4v"}
+        audio_exts = {".mp3", ".wav", ".m4a", ".aac", ".ogg", ".flac"}
+        all_exts = video_exts | audio_exts
+
+        media_files = [f for f in cwd.iterdir() if f.suffix.lower() in all_exts]
+        if media_files:
+            media_path = media_files[0]
+            logger.info("Auto-detected: %s", media_path.name)
+        else:
+            logger.error("No video/audio file found. Use --input to specify one.")
+            sys.exit(1)
+
+    # Resolve to absolute path for Flask compatibility
+    media_path = media_path.resolve()
+
+    if not media_path.exists():
+        logger.error("File not found: %s", media_path)
+        sys.exit(1)
+
+    # Handle export mode (non-interactive)
+    if args.export:
+        from .annotation import (
+            AnnotationStore,
+            get_media_id,
+            export_to_webvtt,
+            export_to_srt,
+            export_to_json,
+        )
+
+        store = AnnotationStore()
+        media_id = get_media_id(media_path)
+        annotations = store.get_by_media(media_id)
+
+        if not annotations:
+            logger.error("No annotations found for: %s", media_path.name)
+            sys.exit(1)
+
+        output_path = Path(args.output) if args.output else Path(f"{media_path.stem}_annotations.{args.export}")
+
+        if args.export == "vtt":
+            export_to_webvtt(annotations, output_path)
+        elif args.export == "srt":
+            export_to_srt(annotations, output_path)
+        elif args.export == "json":
+            export_to_json(annotations, output_path)
+
+        logger.info("Exported %d annotations to: %s", len(annotations), output_path)
+        return
+
+    # Launch interactive annotation server
+    from .annotation_server import run_server
+
+    db_path = Path(args.db) if args.db else None
+
+    # Determine host - --network flag overrides --host
+    host = "0.0.0.0" if args.network else args.host
+
+    if args.network:
+        import socket
+        try:
+            # Get local IP for display
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect(("8.8.8.8", 80))
+            local_ip = s.getsockname()[0]
+            s.close()
+            logger.info("Network mode: accessible at http://%s:%d", local_ip, args.port)
+        except Exception:
+            logger.info("Network mode: server will be accessible on all interfaces")
+
+    run_server(
+        media_path=media_path,
+        host=host,
+        port=args.port,
+        db_path=db_path,
+        open_browser=not args.no_browser,
+    )
+
+
 def cmd_localize(args):
     """
     Full localization pipeline: PDF -> Images -> Translate + Audio
@@ -730,9 +828,14 @@ Examples:
   essai ppt --input presentation.pdf    # Convert PDF to PowerPoint
   essai ppt --input slides/ --script voiceover.md  # Images to PPT with notes
   essai localize --pdf deck.pdf --script script.md --lang Spanish
+  essai annotate video.mp4              # Launch video annotation tool
 
 Web Editor:
   essai edit                             # Launch Streamlit slide editor
+
+Annotation Tool:
+  essai annotate video.mp4              # Launch annotation UI
+  essai annotate --export srt           # Export annotations to SRT
 
 Full pipeline (manual):
   essai pdf presentation.pdf            # Step 1: Extract slides
@@ -861,6 +964,48 @@ One-command video:
     ppt_parser.add_argument(
         "--keep-images", action="store_true", help="Keep extracted images when converting PDF"
     )
+
+    # Annotate command
+    annotate_parser = subparsers.add_parser(
+        "annotate",
+        help="Launch interactive video/audio annotation tool",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  essai annotate video.mp4              # Open annotation UI for video
+  essai annotate --input audio.wav      # Open annotation UI for audio
+  essai annotate                        # Auto-detect media file in current dir
+  essai annotate video.mp4 --network    # Make accessible on local network
+  essai annotate video.mp4 --export srt # Export annotations to SRT
+  essai annotate video.mp4 --export vtt # Export annotations to WebVTT
+  essai annotate video.mp4 --export json -o notes.json
+
+Keyboard shortcuts in the annotation UI:
+  Space       - Play/Pause
+  I           - Set In point for range annotation
+  O           - Set Out point for range annotation
+  [ ]         - Step frame backward/forward
+  Ctrl+Enter  - Submit annotation
+  Escape      - Clear range / exit input
+        """,
+    )
+    annotate_parser.add_argument("input", nargs="?", help="Video or audio file to annotate")
+    annotate_parser.add_argument("--host", default="127.0.0.1", help="Server host (default: 127.0.0.1)")
+    annotate_parser.add_argument("--port", "-p", type=int, default=8765, help="Server port (default: 8765)")
+    annotate_parser.add_argument(
+        "--network",
+        action="store_true",
+        help="Make server accessible on the network (binds to 0.0.0.0)",
+    )
+    annotate_parser.add_argument("--db", help="Custom SQLite database path for annotations")
+    annotate_parser.add_argument("--no-browser", action="store_true", help="Don't auto-open browser")
+    annotate_parser.add_argument(
+        "--export",
+        "-e",
+        choices=["vtt", "srt", "json"],
+        help="Export annotations instead of launching UI",
+    )
+    annotate_parser.add_argument("--output", "-o", help="Output file for export")
 
     # Video command
     video_parser = subparsers.add_parser("video", help="Generate video from slides and audio")
@@ -999,6 +1144,7 @@ Environment:
         "images": cmd_images,
         "localize": cmd_localize,
         "ppt": cmd_ppt,
+        "annotate": cmd_annotate,
     }
 
     # Handle cloud command specially (has subcommands)
