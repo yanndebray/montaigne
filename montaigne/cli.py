@@ -110,8 +110,16 @@ def cmd_pdf(args):
 
     pdf_path = Path(args.input)
     output_dir = Path(args.output) if args.output else None
+    logo_path = Path(args.logo) if hasattr(args, "logo") and args.logo else None
 
-    extract_pdf_pages(pdf_path, output_dir=output_dir, dpi=args.dpi, image_format=args.format)
+    extract_pdf_pages(
+        pdf_path,
+        output_dir=output_dir,
+        dpi=args.dpi,
+        image_format=args.format,
+        add_branding=hasattr(args, "add_branding") and args.add_branding,
+        logo_path=logo_path,
+    )
 
 
 def cmd_script(args):
@@ -214,7 +222,16 @@ def cmd_images(args):
             return
 
     output_dir = Path(args.output) if args.output else None
-    translate_images(input_path, output_dir=output_dir, target_lang=args.lang, model=args.model)
+    logo_path = Path(args.logo) if hasattr(args, "logo") and args.logo else None
+
+    translate_images(
+        input_path,
+        output_dir=output_dir,
+        target_lang=args.lang,
+        model=args.model,
+        add_branding=hasattr(args, "add_branding") and args.add_branding,
+        logo_path=logo_path,
+    )
 
 
 def cmd_video(args):
@@ -884,6 +901,12 @@ One-command video:
     pdf_parser.add_argument("--output", "-o", help="Output directory")
     pdf_parser.add_argument("--dpi", type=int, default=150, help="Image resolution (default: 150)")
     pdf_parser.add_argument("--format", choices=["png", "jpg"], default="png", help="Output format")
+    pdf_parser.add_argument(
+        "--add-branding",
+        action="store_true",
+        help="Add montaigne.cc logo to bottom right of slides",
+    )
+    pdf_parser.add_argument("--logo", help="Path to custom logo image (optional)")
 
     # Script command
     script_parser = subparsers.add_parser(
@@ -946,6 +969,12 @@ One-command video:
         default=None,
         help="Gemini model for image translation (default: gemini-3-pro-image-preview)",
     )
+    translate_parser.add_argument(
+        "--add-branding",
+        action="store_true",
+        help="Add montaigne.cc logo to bottom right of slides",
+    )
+    translate_parser.add_argument("--logo", help="Path to custom logo image (optional)")
 
     # Localize command (full pipeline)
     loc_parser = subparsers.add_parser("localize", help="Full localization pipeline")
