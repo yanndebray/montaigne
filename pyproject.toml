@@ -70,6 +70,9 @@ Repository = "https://github.com/yanndebray/montaigne"
 [tool.setuptools.packages.find]
 include = ["montaigne*"]
 
+[tool.setuptools.package-data]
+montaigne = ["assets/*"]
+
 [tool.black]
 line-length = 100
 target-version = ["py310"]
