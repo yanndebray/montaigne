@@ -744,11 +744,11 @@
         <section class="hero">
             <div class="hero-content">
                 <div class="hero-badge">
-                    <span>v1.0.1</span> · MIT Licensed
+                    <span>v1.1.0</span> · MIT Licensed
                 </div>
                 <h1>Reflect. Narrate.<br><em>Present.</em></h1>
                 <p class="hero-subtitle">
-                    A Python toolkit for presentation animation. Extract slides, translate visuals, generate voiceovers, and create videos—powered by Google Gemini AI and ElevenLabs.
+                    A Python toolkit for presentation animation. Extract slides, translate visuals, generate voiceovers, and create videos—powered by Google Gemini AI, ElevenLabs, and local Coqui TTS.
                 </p>
                 <div class="hero-actions">
                     <button class="btn btn-primary" onclick="openVideoModal()">
@@ -835,7 +835,7 @@
                         <line x1="8" y1="23" x2="16" y2="23"/>
                     </svg>
                     <h3>Voice Synthesis</h3>
-                    <p>Generate natural voiceover audio from scripts. Choose from two providers: <strong>Gemini TTS</strong> (Puck, Charon, Kore, Fenrir, Aoede, Orus) or <strong>ElevenLabs</strong> (custom voices with cloning support).</p>
+                    <p>Generate natural voiceover audio from scripts. Three providers: <strong>Gemini TTS</strong> (cloud), <strong>ElevenLabs</strong> (premium voices), or <strong>Coqui XTTS-v2</strong> (local, no API key required).</p>
                 </div>
 
                 <div class="feature-card animate-on-scroll">
@@ -1000,7 +1000,7 @@ main benefits: automation, insights, and scalability.
                 </div>
                 <div class="api-item animate-on-scroll">
                     <span class="api-name">essai audio</span>
-                    <span class="api-desc">Generate voiceover audio from scripts. Options: <code>--script</code>, <code>--voice</code>, <code>--provider</code> (gemini or elevenlabs), <code>--model</code> (default: gemini-2.5-pro-preview-tts), <code>--list-voices</code>.</span>
+                    <span class="api-desc">Generate voiceover audio from scripts. Options: <code>--script</code>, <code>--voice</code>, <code>--provider</code> (gemini, elevenlabs, or coqui), <code>--model</code> (default: gemini-2.5-pro-preview-tts), <code>--list-voices</code>. Coqui runs locally without API key: <code>pip install montaigne[coqui]</code>.</span>
                 </div>
                 <div class="api-item animate-on-scroll">
                     <span class="api-name">essai images</span>
@@ -1077,6 +1077,11 @@ main benefits: automation, insights, and scalability.
 <span class="code-keyword">$</span> essai audio --script voiceover.md --provider elevenlabs --voice adam
 <span class="code-string">Generated 15 audio files in ./audio/</span>
 
+<span class="code-comment"># Or use Coqui for local TTS (no API key needed)</span>
+<span class="code-keyword">$</span> pip install <span class="code-string">"montaigne[coqui]"</span>
+<span class="code-keyword">$</span> essai audio --script voiceover.md --provider coqui --voice female
+<span class="code-string">Generated 15 audio files in ./audio/</span>
+
 <span class="code-comment"># Generate video with custom models</span>
 <span class="code-keyword">$</span> essai video --pdf presentation.pdf --audio-model gemini-2.5-flash-preview-tts
 <span class="code-string">Step 1: Extracting PDF pages...</span>
@@ -1115,7 +1120,7 @@ main benefits: automation, insights, and scalability.
                 <a href="https://aistudio.google.com/" target="_blank">Google AI Studio</a>
             </div>
             <p class="footer-copy">
-                Powered by Google Gemini AI & ElevenLabs · Built for global presentations.
+                Powered by Google Gemini AI, ElevenLabs & Coqui TTS · Built for global presentations.
             </p>
         </div>
     </footer>
