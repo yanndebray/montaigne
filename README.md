@@ -95,11 +95,36 @@ essai audio --script voiceover.md --voice Kore
 essai audio --script voiceover.md --model gemini-2.5-flash-preview-tts
 ```
 
-Available voices: `Puck`, `Charon`, `Kore`, `Fenrir`, `Aoede`, `Orus`
+**TTS Providers:**
+
+| Provider | Description | Installation |
+|----------|-------------|--------------|
+| `gemini` | Google Gemini TTS API (default) | Included |
+| `elevenlabs` | ElevenLabs TTS API | Included |
+| `coqui` | Local Coqui XTTS-v2 (no API key) | `pip install "montaigne[coqui]"` |
+
+**Gemini voices:** `Puck`, `Charon`, `Kore`, `Fenrir`, `Aoede`, `Orus`
+
+**Local TTS with Coqui:**
+
+```bash
+# Install Coqui dependencies
+pip install "montaigne[coqui]"
+
+# Generate audio locally (no API key required)
+essai audio --script voiceover.md --provider coqui
+essai audio --script voiceover.md --provider coqui --voice male
+essai audio --list-voices --provider coqui
+```
+
+Coqui voices: `female`, `male`, `neutral`
+
+> **Note:** First run downloads the XTTS-v2 model (~1.5GB). Requires accepting the CPML license.
 
 Options:
 - `--script, -s`: Path to voiceover markdown script
-- `--voice, -v`: TTS voice to use (default: `Orus`)
+- `--provider, -p`: TTS provider (`gemini`, `elevenlabs`, `coqui`)
+- `--voice, -v`: TTS voice to use (default: `Orus` for Gemini, `female` for Coqui)
 - `--model, -m`: Gemini TTS model (default: `gemini-2.5-pro-preview-tts`)
 
 ### Translate Images
@@ -249,4 +274,5 @@ essai localize --lang French
 
 - **edit**: `streamlit` - Web editor interface
 - **annotate**: `flask` - Video/audio annotation tool
+- **coqui**: `TTS`, `torch`, `torchaudio` - Local TTS with Coqui XTTS-v2 (no API key required)
 - **cloud**: `fastapi`, `uvicorn`, `google-cloud-storage` - Cloud API deployment
