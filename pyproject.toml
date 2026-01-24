@@ -49,6 +49,10 @@ edit = [
 annotate = [
     "flask>=3.0.0",
 ]
+coqui = [
+    "TTS>=0.22.0",
+    "torch>=2.0.0",
+]
 cloud = [
     "fastapi>=0.100.0",
     "uvicorn[standard]>=0.20.0",
@@ -56,7 +60,7 @@ cloud = [
     "python-multipart>=0.0.6",
 ]
 all = [
-    "montaigne[dev,edit,cloud,annotate]",
+    "montaigne[dev,edit,cloud,annotate,coqui]",
 ]
 
 [project.scripts]
