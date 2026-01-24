@@ -35,6 +35,7 @@ essai setup              # Verify API key and dependencies
 essai pdf input.pdf      # Extract PDF to images
 essai script --input presentation.pdf --context "Topic description"
 essai audio --script voiceover.md --voice Orus
+essai audio --script voiceover.md --provider coqui --voice female  # Local TTS
 essai translate --input slides/ --lang French
 essai ppt --input presentation.pdf --script voiceover.md
 essai video --pdf presentation.pdf
@@ -51,6 +52,12 @@ essai annotate video.mp4       # Launch annotation UI
 essai annotate                 # Auto-detect media in current dir
 essai annotate video.mp4 --export srt   # Export annotations to SRT
 essai annotate video.mp4 --export vtt   # Export annotations to WebVTT
+
+# Local TTS with Coqui XTTS-v2
+pip install -e ".[coqui]"      # Install Coqui TTS dependencies
+essai audio --script voiceover.md --provider coqui
+essai audio --script voiceover.md --provider coqui --voice male
+essai audio --list-voices --provider coqui  # List available voices
 ```
 
 ## Architecture
@@ -63,7 +70,9 @@ montaigne/
 ├── config.py           # API key loading, dependency checks, Gemini client factory
 ├── pdf.py              # PDF extraction using PyMuPDF (fitz)
 ├── scripts.py          # Two-pass voiceover script generation with Gemini
-├── audio.py            # TTS audio generation with Gemini
+├── audio.py            # TTS audio generation (supports Gemini, ElevenLabs, Coqui)
+├── elevenlabs_tts.py   # ElevenLabs TTS provider integration
+├── coqui_tts.py        # Local Coqui XTTS-v2 TTS provider integration
 ├── images.py           # Image translation with Gemini
 ├── video.py            # Video generation with ffmpeg
 ├── ppt.py              # PowerPoint generation with python-pptx
@@ -92,6 +101,11 @@ montaigne/
   - Script generation: `gemini-3-pro-preview` (default, configurable via `--model`)
   - TTS: `gemini-2.5-pro-preview-tts` (default, configurable via `--model`)
   - Image translation: `gemini-3-pro-image-preview` (default, configurable via `--model`)
+- **ElevenLabs API**: Optional TTS provider (`--provider elevenlabs`)
+- **Coqui XTTS-v2**: Optional local TTS provider (`--provider coqui`, requires `pip install montaigne[coqui]`)
+  - Runs entirely on local hardware (CPU/GPU)
+  - No API key required
+  - Supports multilingual voice synthesis
 - **ffmpeg**: Required only for video generation (`essai video`)
 - **PyMuPDF (fitz)**: PDF extraction
 - **python-pptx + Pillow**: PowerPoint generation
@@ -107,6 +121,39 @@ Each AI command supports a `--model` / `-m` flag to override the default Gemini 
 | `essai translate` | `gemini-3-pro-image-preview` | `--model` / `-m` |
 
 Example: `essai script --input slides.pdf --model gemini-2.5-flash`
+
+### TTS Provider Configuration
+
+The `essai audio` command supports multiple TTS providers via the `--provider` flag:
+
+| Provider | Description | Installation | Default Voice |
+|----------|-------------|--------------|---------------|
+| `gemini` | Google Gemini TTS API (default) | Included | Orus |
+| `elevenlabs` | ElevenLabs TTS API | Included | george |
+| `coqui` | Local Coqui XTTS-v2 | `pip install montaigne[coqui]` | female |
+
+**Gemini TTS** (default):
+- Cloud-based, requires GEMINI_API_KEY
+- Voices: Puck, Charon, Kore, Fenrir, Aoede, Orus
+- Model configurable via `--model` flag
+
+**ElevenLabs TTS**:
+- Cloud-based, requires ELEVENLABS_API_KEY
+- Presets: adam, bob, william, george
+- Supports custom voice IDs
+
+**Coqui TTS** (local):
+- Runs entirely on local hardware (no API key needed)
+- Voices: female, male, neutral
+- Supports voice cloning with reference audio
+- Requires installation: `pip install montaigne[coqui]`
+
+Examples:
+```bash
+essai audio --script voiceover.md --provider gemini --voice Orus
+essai audio --script voiceover.md --provider elevenlabs --voice george
+essai audio --script voiceover.md --provider coqui --voice female
+```
 
 ### Voiceover Script Format
 

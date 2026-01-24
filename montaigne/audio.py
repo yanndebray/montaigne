@@ -10,6 +10,7 @@ from typing import List, Dict, Optional
 from .config import get_gemini_client, get_elevenlabs_client
 from .logging import get_logger
 from .elevenlabs_tts import generate_slide_audio_elevenlabs, ELEVENLABS_VOICES, ElevenLabsQuotaError
+from .coqui_tts import generate_slide_audio_coqui, COQUI_VOICES, CoquiLoadError
 
 logger = get_logger(__name__)
 
@@ -241,6 +242,11 @@ def list_voices(provider: str = "gemini"):
         for name in ELEVENLABS_VOICES.keys():
             logger.info(" - %s", name)
         logger.info("You can also use any custom ElevenLabs voice ID directly.")
+    elif provider.lower() == "coqui":
+        logger.info("Available Coqui TTS Voices (presets):")
+        for name in COQUI_VOICES.keys():
+            logger.info(" - %s", name)
+        logger.info("You can also provide a custom reference audio file for voice cloning.")
     else:
         logger.info("Available Gemini Voices:")
         for name in VOICES:
@@ -260,7 +266,7 @@ def generate_audio(
         script_path: Path to voiceover script markdown file
         output_dir: Directory for output audio files
         voice: Voice name to use
-        provider: TTS provider ("gemini" or "elevenlabs")
+        provider: TTS provider ("gemini", "elevenlabs", or "coqui")
         model: Optional Gemini model name (default: gemini-2.5-flash-preview-tts)
 
     Returns:
@@ -280,10 +286,23 @@ def generate_audio(
         logger.info("Using model: %s", model)
 
     is_eleven = provider.lower() == "elevenlabs"
-    client = get_elevenlabs_client() if is_eleven else get_gemini_client()
+    is_coqui = provider.lower() == "coqui"
+
+    # Get client based on provider (not needed for coqui)
+    client = None
+    if is_eleven:
+        client = get_elevenlabs_client()
+    elif not is_coqui:
+        client = get_gemini_client()
 
     # Default voice logic
-    active_voice = voice or ("george" if is_eleven else DEFAULT_VOICE)
+    if is_eleven:
+        active_voice = voice or "george"
+    elif is_coqui:
+        active_voice = voice or "female"
+    else:
+        active_voice = voice or DEFAULT_VOICE
+
     extension = "wav"  # Always wav per Acceptance Criteria
     generated_files = []
 
@@ -304,11 +323,24 @@ def generate_audio(
                 generate_slide_audio_elevenlabs(
                     slide["text"], output_path, voice=active_voice, client=client
                 )
+            elif is_coqui:
+                generate_slide_audio_coqui(slide["text"], output_path, voice=active_voice)
             else:
                 generate_slide_audio(
                     slide["text"], output_path, voice=active_voice, client=client, model=model
                 )
             generated_files.append(output_path)
+        except CoquiLoadError as e:
+            # Fail fast on Coqui load errors
+            logger.error("Failed to load Coqui TTS at slide %d", slide["number"])
+            logger.error(str(e))
+            if generated_files:
+                logger.error(
+                    "Generated %d of %d audio files before encountering error",
+                    len(generated_files),
+                    len(slides),
+                )
+            raise
         except ElevenLabsQuotaError as e:
             # Fail fast on quota errors - no point continuing
             logger.error("ElevenLabs quota exceeded at slide %d", slide["number"])

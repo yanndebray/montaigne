@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "montaigne"
-version = "1.0.1"
+version = "1.1.0"
 description = "Media processing toolkit for presentation localization"
 readme = "README.md"
 license = {text = "MIT"}
@@ -49,6 +49,12 @@ edit = [
 annotate = [
     "flask>=3.0.0",
 ]
+coqui = [
+    "TTS>=0.22.0",
+    "torch>=2.4.0,<2.6",
+    "torchaudio>=2.4.0,<2.6",
+    "transformers>=4.40.0,<4.50",
+]
 cloud = [
     "fastapi>=0.100.0",
     "uvicorn[standard]>=0.20.0",
@@ -56,7 +62,7 @@ cloud = [
     "python-multipart>=0.0.6",
 ]
 all = [
-    "montaigne[dev,edit,cloud,annotate]",
+    "montaigne[dev,edit,cloud,annotate,coqui]",
 ]
 
 [project.scripts]

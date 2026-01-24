@@ -850,6 +850,7 @@ Examples:
   essai pdf presentation.pdf            # Extract PDF to images
   essai script --input presentation.pdf # Generate voiceover script from PDF
   essai audio --script voiceover.md     # Generate audio from script
+  essai audio --script voiceover.md --provider coqui  # Use local Coqui TTS
   essai video --pdf presentation.pdf    # Generate video from PDF (full pipeline)
   essai translate --input slides/       # Translate images
   essai ppt --input presentation.pdf    # Convert PDF to PowerPoint
@@ -938,14 +939,14 @@ One-command video:
     audio_parser.add_argument("--output", "-o", help="Output directory")
     audio_parser.add_argument(
         "--provider",
-        choices=["gemini", "elevenlabs"],
+        choices=["gemini", "elevenlabs", "coqui"],
         default="gemini",
         help="TTS provider to use (default: gemini)",
     )
     audio_parser.add_argument(
         "--voice",
-        default=None,  # audio.py will handle the default (Orus or George)
-        help="Voice name: Gemini (Puck, Orus, etc.) or ElevenLabs (preset: adam, bob, william, george; or any voice ID)",
+        default=None,  # audio.py will handle the default (Orus, George, or female)
+        help="Voice name: Gemini (Puck, Orus, etc.), ElevenLabs (preset: adam, bob, william, george; or any voice ID), or Coqui (female, male, neutral)",
     )
     audio_parser.add_argument(
         "--list-voices",
@@ -996,7 +997,9 @@ One-command video:
     loc_parser.add_argument(
         "--dpi", type=int, default=150, help="PDF extraction DPI (default: 150)"
     )
-    loc_parser.add_argument("--provider", choices=["gemini", "elevenlabs"], default="gemini")
+    loc_parser.add_argument(
+        "--provider", choices=["gemini", "elevenlabs", "coqui"], default="gemini"
+    )
 
     # PPT command
     ppt_parser = subparsers.add_parser("ppt", help="Create PowerPoint from PDF or images")
@@ -1075,9 +1078,11 @@ Keyboard shortcuts in the annotation UI:
     video_parser.add_argument(
         "--voice",
         default="Orus",
-        help="Voice name: Gemini (Orus, Puck, etc.) or ElevenLabs (preset: adam, bob, etc.; or any voice ID)",
+        help="Voice name: Gemini (Orus, Puck, etc.), ElevenLabs (preset: adam, bob, etc.; or any voice ID), or Coqui (female, male, neutral)",
     )
-    video_parser.add_argument("--provider", choices=["gemini", "elevenlabs"], default="gemini")
+    video_parser.add_argument(
+        "--provider", choices=["gemini", "elevenlabs", "coqui"], default="gemini"
+    )
     video_parser.add_argument(
         "--context",
         "-c",
