@@ -4,13 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>montaigne — Media Processing for Presentation Localization</title>
-    <meta name="description" content="A powerful Python toolkit for presentation localization. Extract slides, translate visuals, generate voiceovers, and create videos—all powered by Google Gemini AI.">
+    <meta name="description" content="A powerful Python toolkit for presentation localization. Extract slides, translate visuals, generate voiceovers, and create videos—all powered by AI.">
 
     <!-- Open Graph / Facebook / WhatsApp -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://yanndebray.github.io/montaigne/">
     <meta property="og:title" content="montaigne — Localize. Narrate. Present.">
-    <meta property="og:description" content="A powerful Python toolkit for presentation localization. Extract slides, translate visuals, generate voiceovers, and create videos—all powered by Google Gemini AI.">
+    <meta property="og:description" content="A powerful Python toolkit for presentation localization. Extract slides, translate visuals, generate voiceovers, and create videos—all powered by AI.">
     <meta property="og:image" content="https://yanndebray.github.io/montaigne/og-image.png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
@@ -20,7 +20,7 @@
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:url" content="https://yanndebray.github.io/montaigne/">
     <meta name="twitter:title" content="montaigne — Localize. Narrate. Present.">
-    <meta name="twitter:description" content="A powerful Python toolkit for presentation localization. Extract slides, translate visuals, generate voiceovers, and create videos—all powered by Google Gemini AI.">
+    <meta name="twitter:description" content="A powerful Python toolkit for presentation localization. Extract slides, translate visuals, generate voiceovers, and create videos—all powered by AI.">
     <meta name="twitter:image" content="https://yanndebray.github.io/montaigne/og-image.png">
 
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✒️</text></svg>">
@@ -590,6 +590,13 @@
             font-size: 0.85rem;
         }
 
+        .footer-copy a {
+            color: var(--muted);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.2s;
+        }
+
         /* Animations */
         @keyframes fadeInUp {
             from {
@@ -744,11 +751,11 @@
         <section class="hero">
             <div class="hero-content">
                 <div class="hero-badge">
-                    <span>v1.1.0</span> · MIT Licensed
+                    <span>v1.1.1</span> · MIT Licensed
                 </div>
                 <h1>Reflect. Narrate.<br><em>Present.</em></h1>
                 <p class="hero-subtitle">
-                    A Python toolkit for presentation animation. Extract slides, translate visuals, generate voiceovers, and create videos—powered by Google Gemini AI, ElevenLabs, and local Coqui TTS.
+                    A Python toolkit for presentation animation. Extract slides, translate visuals, generate voiceovers, and create videos—powered by Google Gemini AI, ElevenLabs, and local TTS.
                 </p>
                 <div class="hero-actions">
                     <button class="btn btn-primary" onclick="openVideoModal()">
@@ -824,7 +831,7 @@
                         <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
                     </svg>
                     <h3>Image Translation</h3>
-                    <p>Translate text in images to any target language. Powered by Google Gemini AI for accurate, context-aware translations.</p>
+                    <p>Translate text in images to any target language. Powered by Nano Banana Pro 🍌 for accurate, context-aware translations.</p>
                 </div>
 
                 <div class="feature-card animate-on-scroll">
@@ -865,14 +872,6 @@
                     </svg>
                     <h3>PowerPoint Export</h3>
                     <p>Create PPTX presentations from PDF or images. Optionally add voiceover scripts as speaker notes for each slide.</p>
-                </div>
-
-                <div class="feature-card animate-on-scroll">
-                    <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-                    </svg>
-                    <h3>Full Pipeline</h3>
-                    <p>One-command localization workflow. Extract, translate, and generate audio in a single step with <code>essai localize</code>.</p>
                 </div>
 
                 <div class="feature-card animate-on-scroll">
@@ -1115,12 +1114,12 @@ main benefits: automation, insights, and scalability.
     <footer>
         <div class="footer-content">
             <div class="footer-links">
-                <a href="https://github.com/yanndebray/montaigne" target="_blank">GitHub</a>
-                <a href="https://pypi.org/project/montaigne/" target="_blank">PyPI</a>
                 <a href="https://aistudio.google.com/" target="_blank">Google AI Studio</a>
+                <a href="https://elevenlabs.io/" target="_blank">ElevenLabs</a>
+                <a href="https://github.com/coqui-ai/TTS" target="_blank">Coqui TTS</a>
             </div>
             <p class="footer-copy">
-                Powered by Google Gemini AI, ElevenLabs & Coqui TTS · Built for global presentations.
+                This site is powered by <a href="https://netlify.com/" target="_blank">Netlify</a> 🚀
             </p>
         </div>
     </footer>
