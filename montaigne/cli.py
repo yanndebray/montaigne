@@ -59,9 +59,9 @@ def cmd_setup(args):
         logger.info("All dependencies installed.")
 
     # Verify API key
-    from dotenv import load_dotenv
+    from dotenv import find_dotenv, load_dotenv
 
-    load_dotenv()
+    load_dotenv(find_dotenv(usecwd=True))
 
     api_key = os.environ.get("GEMINI_API_KEY")
     if api_key:

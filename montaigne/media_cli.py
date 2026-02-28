@@ -42,9 +42,9 @@ def install_dependencies():
 
 def load_api_key():
     """Load the Gemini API key from .env file."""
-    from dotenv import load_dotenv
+    from dotenv import find_dotenv, load_dotenv
 
-    load_dotenv()
+    load_dotenv(find_dotenv(usecwd=True))
 
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
@@ -354,9 +354,9 @@ def cmd_setup(args):
         print("Dependencies already installed.")
 
     # Re-import after install
-    from dotenv import load_dotenv
+    from dotenv import find_dotenv, load_dotenv
 
-    load_dotenv()
+    load_dotenv(find_dotenv(usecwd=True))
 
     api_key = os.environ.get("GEMINI_API_KEY")
     if api_key:

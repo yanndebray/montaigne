@@ -32,9 +32,9 @@ def install_dependencies():
 
 def load_api_key(client_name: str) -> str:
     """Load the requested API key from .env file."""
-    from dotenv import load_dotenv
+    from dotenv import find_dotenv, load_dotenv
 
-    load_dotenv()
+    load_dotenv(find_dotenv(usecwd=True))
 
     if client_name == "gemini":
         key = os.environ.get("GEMINI_API_KEY")
