@@ -400,12 +400,6 @@ SCRIPT:
     if "SCRIPT:" in text:
         script = text.split("SCRIPT:")[1].strip()
 
-    # Enforce word limit: truncate to ~75 words if model exceeded it
-    words = script.split()
-    if len(words) > 75:
-        script = " ".join(words[:75]).rstrip(",.;:—-") + "."
-        duration = "30 seconds"
-
     return {
         "number": slide_number,
         "title": title,
