@@ -181,7 +181,7 @@ AUDIENCE: [Target audience - e.g., "Developers and data scientists", "Business e
 
 TONE: [Overall tone - e.g., "Technical but accessible, practical and empowering"]
 
-TOTAL_DURATION: [Estimated total voiceover duration for all slides, e.g., "12-15 minutes"]
+TOTAL_DURATION: [Estimated total voiceover duration assuming max 30 seconds per slide, e.g., "{len(images) * 30 // 60}-{len(images) * 30 // 60 + 1} minutes"]
 
 SLIDE_SUMMARIES:
 1. [Brief 5-10 word summary of slide 1's main point]
@@ -328,38 +328,30 @@ def generate_slide_script(
     prev_context = previous_summary if previous_summary else "This is the first slide"
     next_context = upcoming_preview if upcoming_preview else "This is the final slide"
 
-    prompt = f"""Analyze this presentation slide and generate a voiceover script.
+    prompt = f"""Generate a voiceover script for this presentation slide.
 
-PRESENTATION CONTEXT:
-- Topic: {topic}
-- Target Audience: {audience}
-- Overall Tone: {tone}
-- This is slide {slide_number} of {total_slides}
-- Narrative position: {arc_position}
+HARD CONSTRAINT: The script MUST be 75 words or fewer. No exceptions. Count your words before responding.
+
+CONTEXT:
+- Topic: {topic} | Audience: {audience} | Tone: {tone}
+- Slide {slide_number} of {total_slides} ({arc_position})
 {chr(10).join(context_parts)}
+- Previous: {prev_context}
+- Next: {next_context}
 
-PREVIOUS SLIDE: {prev_context}
-NEXT SLIDE: {next_context}
+RULES:
+- 75 words MAX. This is a strict limit.
+- Be sharp and direct — no filler, no "welcome", no "let's look at"
+- Distill the single key insight, don't narrate every bullet
+- Use *emphasis* for key terms when first introduced
+- Transition briefly from previous slide (if not first)
 
-Please provide:
-1. TITLE: A short title for this slide (max 50 characters)
-2. TONE: Suggested tone for this specific slide (e.g., "inviting, setting the stage" or "technical, instructional")
-3. DURATION: Estimated speaking duration (e.g., "45-60 seconds")
-4. SCRIPT: A natural, conversational voiceover script that:
-   - Creates a smooth transition from the previous content (if not the first slide)
-   - Uses conversational, engaging language appropriate for {audience}
-   - Includes rhetorical questions where appropriate to engage the audience
-   - Uses emphasis markers (*word*) for key terms when first introduced
-   - Does NOT simply read bullet points verbatim - expand and explain
-   - Sets up or foreshadows the next slide when appropriate (if not the last slide)
-   - Matches the narrative position: {arc_position}
-
-Format your response EXACTLY as:
-TITLE: [slide title]
+Format EXACTLY as:
+TITLE: [max 50 chars]
 TONE: [tone for this slide]
-DURATION: [estimated duration]
+DURATION: [must be 20-30 seconds]
 SCRIPT:
-[voiceover text here]"""
+[voiceover — 75 words max]"""
 
     contents = [
         types.Content(
@@ -375,6 +367,9 @@ SCRIPT:
         response = client.models.generate_content(
             model=model,
             contents=contents,
+            config=types.GenerateContentConfig(
+                system_instruction="You are a concise scriptwriter. Every voiceover script you write MUST be 75 words or fewer. This is a hard limit. Be punchy and direct.",
+            ),
         )
         text = response.text
     except Exception as e:
@@ -383,7 +378,7 @@ SCRIPT:
 
     title = f"Slide {slide_number}"
     slide_tone = "Professional"
-    duration = "30-45 seconds"
+    duration = "30 seconds"
     script = text
 
     # Extract title
@@ -718,7 +713,7 @@ def _format_scripts_markdown(
         lines.extend(
             [
                 f"## Slide {slide['number']}: {slide['title']}",
-                f"**Duration:** {slide.get('duration', '30-45 seconds')}",
+                f"**Duration:** {slide.get('duration', '30 seconds')}",
             ]
         )
 
