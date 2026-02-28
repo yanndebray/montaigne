@@ -344,13 +344,14 @@ NEXT SLIDE: {next_context}
 Please provide:
 1. TITLE: A short title for this slide (max 50 characters)
 2. TONE: Suggested tone for this specific slide (e.g., "inviting, setting the stage" or "technical, instructional")
-3. DURATION: Estimated speaking duration (e.g., "45-60 seconds")
-4. SCRIPT: A natural, conversational voiceover script that:
+3. DURATION: Estimated speaking duration (MUST be 30 seconds or less)
+4. SCRIPT: A sharp, concise voiceover script that:
+   - Is NO LONGER than 30 seconds when spoken (~75 words max)
+   - Gets straight to the point - no filler or unnecessary preamble
    - Creates a smooth transition from the previous content (if not the first slide)
    - Uses conversational, engaging language appropriate for {audience}
-   - Includes rhetorical questions where appropriate to engage the audience
    - Uses emphasis markers (*word*) for key terms when first introduced
-   - Does NOT simply read bullet points verbatim - expand and explain
+   - Does NOT simply read bullet points verbatim - distill the key insight
    - Sets up or foreshadows the next slide when appropriate (if not the last slide)
    - Matches the narrative position: {arc_position}
 
@@ -383,7 +384,7 @@ SCRIPT:
 
     title = f"Slide {slide_number}"
     slide_tone = "Professional"
-    duration = "30-45 seconds"
+    duration = "30 seconds"
     script = text
 
     # Extract title
@@ -718,7 +719,7 @@ def _format_scripts_markdown(
         lines.extend(
             [
                 f"## Slide {slide['number']}: {slide['title']}",
-                f"**Duration:** {slide.get('duration', '30-45 seconds')}",
+                f"**Duration:** {slide.get('duration', '30 seconds')}",
             ]
         )
 
