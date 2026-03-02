@@ -18,6 +18,7 @@ ELEVENLABS_VOICES = {
     "bob": "3nzyRCzDIWOtbkzj2qvj",
     "william": "8Es4wFxsDlHBmFWAOWRS",
     "george": "JBFqnCBsd6RMkjVDRZzb",
+    "hans": "pX6i0Dc29C8b3143knvS",
 }
 
 ELEVENLABS_MODEL_ID = "eleven_multilingual_v2"
