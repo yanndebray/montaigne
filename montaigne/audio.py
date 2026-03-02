@@ -259,6 +259,7 @@ def generate_audio(
     voice: Optional[str] = None,
     provider: str = "gemini",
     model: Optional[str] = None,
+    force: bool = False,
 ) -> List[Path]:
     """Main entry point to generate audio for a full script.
 
@@ -268,6 +269,7 @@ def generate_audio(
         voice: Voice name to use
         provider: TTS provider ("gemini", "elevenlabs", or "coqui")
         model: Optional Gemini model name (default: gemini-2.5-flash-preview-tts)
+        force: If True, regenerate all audio even if files already exist
 
     Returns:
         List of paths to generated audio files
@@ -315,9 +317,19 @@ def generate_audio(
 
     slide_iterator = tqdm(slides, desc=f"Generating {provider} audio") if use_tqdm else slides
 
+    skipped = 0
     for slide in slide_iterator:
         try:
             output_path = output_dir / f"slide_{slide['number']:02d}.{extension}"
+
+            if not force and output_path.exists():
+                if use_tqdm:
+                    tqdm.write(f"  Skipping Slide {slide['number']} (already exists)")
+                else:
+                    logger.info("Skipping Slide %d (already exists): %s", slide["number"], output_path.name)
+                generated_files.append(output_path)
+                skipped += 1
+                continue
 
             if is_eleven:
                 generate_slide_audio_elevenlabs(
@@ -369,5 +381,8 @@ def generate_audio(
             else:
                 logger.error(msg)
 
-    logger.info("Success! Generated %d files in %s/", len(generated_files), output_dir)
+    if skipped:
+        logger.info("Done! %d generated, %d skipped (already existed) in %s/", len(generated_files) - skipped, skipped, output_dir)
+    else:
+        logger.info("Success! Generated %d files in %s/", len(generated_files), output_dir)
     return generated_files
