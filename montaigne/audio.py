@@ -326,7 +326,9 @@ def generate_audio(
                 if use_tqdm:
                     tqdm.write(f"  Skipping Slide {slide['number']} (already exists)")
                 else:
-                    logger.info("Skipping Slide %d (already exists): %s", slide["number"], output_path.name)
+                    logger.info(
+                        "Skipping Slide %d (already exists): %s", slide["number"], output_path.name
+                    )
                 generated_files.append(output_path)
                 skipped += 1
                 continue
@@ -382,7 +384,12 @@ def generate_audio(
                 logger.error(msg)
 
     if skipped:
-        logger.info("Done! %d generated, %d skipped (already existed) in %s/", len(generated_files) - skipped, skipped, output_dir)
+        logger.info(
+            "Done! %d generated, %d skipped (already existed) in %s/",
+            len(generated_files) - skipped,
+            skipped,
+            output_dir,
+        )
     else:
         logger.info("Success! Generated %d files in %s/", len(generated_files), output_dir)
     return generated_files
