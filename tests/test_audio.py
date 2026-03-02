@@ -5,8 +5,11 @@ import base64
 import struct
 from pathlib import Path
 
+from unittest.mock import patch, MagicMock
+
 from montaigne.audio import (
     parse_voiceover_script,
+    generate_audio,
     _parse_audio_mime_type,
     _decode_audio_data,
     _convert_to_wav,
@@ -222,6 +225,87 @@ class TestConvertToWav:
         # Bits per sample is at bytes 34-36 (little-endian)
         bits_per_sample = struct.unpack("<H", wav_data[34:36])[0]
         assert bits_per_sample == 16
+
+
+class TestSkipExistingAudio:
+    """Tests for skip-existing logic in generate_audio."""
+
+    def test_skips_existing_files(self, sample_voiceover_script, temp_dir):
+        """Existing audio files should be skipped, not regenerated."""
+        output_dir = temp_dir / "audio_out"
+        output_dir.mkdir()
+
+        # Pre-create audio files for slides 1 and 2
+        (output_dir / "slide_01.wav").write_bytes(b"existing-audio-1")
+        (output_dir / "slide_02.wav").write_bytes(b"existing-audio-2")
+
+        with patch("montaigne.audio.generate_slide_audio") as mock_gen, \
+             patch("montaigne.audio.get_gemini_client"):
+            mock_gen.side_effect = lambda text, path, **kw: path.write_bytes(b"new-audio")
+
+            result = generate_audio(sample_voiceover_script, output_dir=output_dir)
+
+        # Should have returned all 3 slides
+        assert len(result) == 3
+        # Only slide 3 should have been generated (slides 1 & 2 skipped)
+        assert mock_gen.call_count == 1
+        # Pre-existing files should be untouched
+        assert (output_dir / "slide_01.wav").read_bytes() == b"existing-audio-1"
+        assert (output_dir / "slide_02.wav").read_bytes() == b"existing-audio-2"
+
+    def test_force_regenerates_existing_files(self, sample_voiceover_script, temp_dir):
+        """With force=True, existing files should be regenerated."""
+        output_dir = temp_dir / "audio_out"
+        output_dir.mkdir()
+
+        # Pre-create audio file for slide 1
+        (output_dir / "slide_01.wav").write_bytes(b"old-audio")
+
+        with patch("montaigne.audio.generate_slide_audio") as mock_gen, \
+             patch("montaigne.audio.get_gemini_client"):
+            mock_gen.side_effect = lambda text, path, **kw: path.write_bytes(b"new-audio")
+
+            result = generate_audio(sample_voiceover_script, output_dir=output_dir, force=True)
+
+        # All 3 slides should have been generated
+        assert mock_gen.call_count == 3
+        assert len(result) == 3
+        # Slide 1 should have been overwritten
+        assert (output_dir / "slide_01.wav").read_bytes() == b"new-audio"
+
+    def test_skip_existing_resumes_after_quota_error(self, temp_dir):
+        """Skip-existing enables resuming after a quota error mid-run."""
+        script_content = """# Test
+## SLIDE 1: First
+**Duration:** 30s
+First slide text.
+---
+## SLIDE 2: Second
+**Duration:** 30s
+Second slide text.
+---
+## SLIDE 3: Third
+**Duration:** 30s
+Third slide text.
+"""
+        script_path = temp_dir / "voiceover.md"
+        script_path.write_text(script_content, encoding="utf-8")
+
+        output_dir = temp_dir / "audio_out"
+        output_dir.mkdir()
+
+        # Simulate: slide 1 was generated before quota hit
+        (output_dir / "slide_01.wav").write_bytes(b"completed-before-quota")
+
+        with patch("montaigne.audio.generate_slide_audio") as mock_gen, \
+             patch("montaigne.audio.get_gemini_client"):
+            mock_gen.side_effect = lambda text, path, **kw: path.write_bytes(b"new")
+
+            result = generate_audio(script_path, output_dir=output_dir)
+
+        # Slide 1 skipped, slides 2 & 3 generated
+        assert mock_gen.call_count == 2
+        assert len(result) == 3
 
 
 class TestVoiceConstants:

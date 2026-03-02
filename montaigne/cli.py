@@ -194,6 +194,7 @@ def cmd_audio(args):
         voice=args.voice,
         provider=args.provider,
         model=args.model,
+        force=args.force,
     )
 
 
@@ -958,6 +959,11 @@ One-command video:
         "-m",
         default=None,
         help="Gemini model for TTS (default: gemini-2.5-pro-preview-tts)",
+    )
+    audio_parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Regenerate all audio files, even if they already exist",
     )
 
     # Translate command (image translation)
