@@ -1,6 +1,8 @@
-"""PowerPoint generation from PDF or images."""
+"""PowerPoint generation from PDF or images, and PPTX input support."""
 
 import re
+import shutil
+import subprocess
 from pathlib import Path
 from typing import List, Optional
 
@@ -9,6 +11,219 @@ from .logging import get_logger
 logger = get_logger(__name__)
 
 IMAGE_EXTENSIONS = {".jpeg", ".jpg", ".png", ".gif", ".webp", ".bmp", ".tiff"}
+
+
+# ---------------------------------------------------------------------------
+# PPTX input support: extract pages/notes from .pptx files
+# ---------------------------------------------------------------------------
+
+
+def check_libreoffice() -> bool:
+    """Return True if LibreOffice (soffice) is available on PATH."""
+    for cmd in ("soffice", "libreoffice"):
+        if shutil.which(cmd):
+            return True
+    return False
+
+
+def extract_pptx_pages(
+    pptx_path: Path,
+    output_dir: Optional[Path] = None,
+    dpi: int = 150,
+    add_branding: bool = True,
+    logo_path: Optional[Path] = None,
+) -> List[Path]:
+    """
+    Extract slide images from a PPTX file.
+
+    Strategy 1 (preferred): If LibreOffice is available, convert PPTX → PDF
+    then delegate to ``extract_pdf_pages()``.
+
+    Strategy 2 (fallback): Use python-pptx to pull the largest embedded image
+    from each slide (works well for NotebookLM exports where each slide is a
+    full-bleed image).
+
+    Args:
+        pptx_path: Path to the .pptx file
+        output_dir: Directory for output images (default: {stem}_images/)
+        dpi: Resolution for PDF-based extraction (default: 150)
+        add_branding: If True, add montaigne.cc logo overlay
+        logo_path: Optional path to logo image
+
+    Returns:
+        Sorted list of extracted image file paths
+    """
+    from pptx import Presentation as PptxPresentation
+
+    pptx_path = Path(pptx_path)
+    if not pptx_path.exists():
+        raise FileNotFoundError(f"PPTX not found: {pptx_path}")
+
+    if output_dir is None:
+        output_dir = pptx_path.parent / f"{pptx_path.stem}_images"
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    # --- Strategy 1: LibreOffice → PDF → extract_pdf_pages ---
+    if check_libreoffice():
+        logger.info("Converting PPTX to PDF via LibreOffice...")
+        soffice = shutil.which("soffice") or shutil.which("libreoffice")
+        import tempfile
+
+        with tempfile.TemporaryDirectory(prefix="montaigne_lo_") as tmp:
+            subprocess.run(
+                [
+                    soffice,
+                    "--headless",
+                    "--convert-to",
+                    "pdf",
+                    "--outdir",
+                    tmp,
+                    str(pptx_path),
+                ],
+                capture_output=True,
+                check=True,
+            )
+            pdf_candidates = list(Path(tmp).glob("*.pdf"))
+            if pdf_candidates:
+                from .pdf import extract_pdf_pages
+
+                return extract_pdf_pages(
+                    pdf_candidates[0],
+                    output_dir=output_dir,
+                    dpi=dpi,
+                    add_branding=add_branding,
+                    logo_path=logo_path,
+                )
+
+        logger.warning("LibreOffice conversion produced no PDF, falling back to image extraction")
+
+    # --- Strategy 2: extract embedded images via python-pptx ---
+    logger.info("Extracting embedded images from PPTX slides...")
+    prs = PptxPresentation(str(pptx_path))
+    extracted: List[Path] = []
+
+    for slide_idx, slide in enumerate(prs.slides, start=1):
+        # Collect all images in this slide and pick the largest
+        best_blob: Optional[bytes] = None
+        best_size = 0
+        best_ext = ".png"
+
+        for shape in slide.shapes:
+            if shape.shape_type == 13:  # MSO_SHAPE_TYPE.PICTURE
+                blob = shape.image.blob
+                if len(blob) > best_size:
+                    best_blob = blob
+                    best_size = len(blob)
+                    content_type = shape.image.content_type  # e.g. "image/png"
+                    ext = {
+                        "image/png": ".png",
+                        "image/jpeg": ".jpg",
+                        "image/gif": ".gif",
+                        "image/bmp": ".bmp",
+                        "image/tiff": ".tiff",
+                    }.get(content_type, ".png")
+                    best_ext = ext
+
+        if best_blob:
+            out_path = output_dir / f"page_{slide_idx:03d}{best_ext}"
+            out_path.write_bytes(best_blob)
+            extracted.append(out_path)
+            logger.info("  Extracted slide %d image (%d KB)", slide_idx, best_size // 1024)
+        else:
+            logger.warning("  Slide %d: no embedded image found, skipping", slide_idx)
+
+    if not extracted:
+        raise RuntimeError(
+            f"Could not extract any images from {pptx_path.name}. "
+            "Install LibreOffice for full rendering support: brew install --cask libreoffice"
+        )
+
+    logger.info("Extracted %d slide images to %s/", len(extracted), output_dir)
+    return extracted
+
+
+def extract_pptx_notes(pptx_path: Path) -> List[str]:
+    """
+    Extract speaker notes from each slide in a PPTX file.
+
+    Args:
+        pptx_path: Path to the .pptx file
+
+    Returns:
+        List of note strings, one per slide (empty string if no notes)
+    """
+    from pptx import Presentation as PptxPresentation
+
+    pptx_path = Path(pptx_path)
+    if not pptx_path.exists():
+        raise FileNotFoundError(f"PPTX not found: {pptx_path}")
+
+    prs = PptxPresentation(str(pptx_path))
+    notes: List[str] = []
+
+    for slide in prs.slides:
+        if slide.has_notes_slide:
+            text = slide.notes_slide.notes_text_frame.text.strip()
+            notes.append(text)
+        else:
+            notes.append("")
+
+    return notes
+
+
+def pptx_has_notes(pptx_path: Path) -> bool:
+    """Return True if the PPTX has at least one slide with non-empty notes."""
+    return any(n.strip() for n in extract_pptx_notes(pptx_path))
+
+
+def notes_to_voiceover_script(
+    notes: List[str], output_path: Path, title: str = "Presentation"
+) -> Path:
+    """
+    Format slide notes into the standard voiceover markdown script format.
+
+    Args:
+        notes: List of note strings (one per slide)
+        output_path: Path where the markdown file will be written
+        title: Presentation title for the header
+
+    Returns:
+        Path to the written script file
+    """
+    output_path = Path(output_path)
+    lines = [
+        f"# {title}",
+        "## Voice-Over Script",
+        "",
+        f"**Total slides:** {len(notes)}",
+        "",
+        "---",
+        "",
+    ]
+
+    for i, note_text in enumerate(notes, start=1):
+        text = note_text.strip() if note_text else "[No notes for this slide]"
+        lines.extend(
+            [
+                f"## SLIDE {i}: Slide {i}",
+                "**Duration:** 30 seconds",
+                "",
+                "### Voice-Over:",
+                "",
+                text,
+                "",
+                "---",
+                "",
+            ]
+        )
+
+    lines.append("*Script generated from PPTX slide notes by Montaigne*")
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text("\n".join(lines), encoding="utf-8")
+    logger.info("Generated voiceover script from notes: %s", output_path)
+    return output_path
 
 
 def parse_script_to_slides(script_path: Path) -> List[str]:

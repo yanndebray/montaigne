@@ -751,7 +751,7 @@
         <section class="hero">
             <div class="hero-content">
                 <div class="hero-badge">
-                    <span>v1.3.0</span> · MIT Licensed
+                    <span>v1.4.0</span> · MIT Licensed
                 </div>
                 <h1>Reflect. Narrate.<br><em>Present.</em></h1>
                 <p class="hero-subtitle">
@@ -811,8 +811,8 @@
                         <line x1="16" y1="13" x2="8" y2="13"/>
                         <line x1="16" y1="17" x2="8" y2="17"/>
                     </svg>
-                    <h3>PDF Extraction</h3>
-                    <p>Convert PDF presentations to high-quality images. Configurable DPI settings (150-300+) with PNG or JPG output formats.</p>
+                    <h3>PDF &amp; PPTX Input</h3>
+                    <p>Accept PDF or PPTX presentations as input. Extract high-quality slide images with configurable DPI. PPTX slide notes are auto-used as voiceover scripts.</p>
                 </div>
 
                 <div class="feature-card animate-on-scroll">
@@ -870,8 +870,8 @@
                         <path d="M12 12h5"/>
                         <path d="M12 16h3"/>
                     </svg>
-                    <h3>PowerPoint Export</h3>
-                    <p>Create PPTX presentations from PDF or images. Optionally add voiceover scripts as speaker notes for each slide.</p>
+                    <h3>PowerPoint I/O</h3>
+                    <p>Import PPTX as input (extract slides and notes) or export to PPTX from PDF/images. Voiceover scripts can be added as speaker notes.</p>
                 </div>
 
                 <div class="feature-card animate-on-scroll">
@@ -995,7 +995,7 @@ main benefits: automation, insights, and scalability.
                 </div>
                 <div class="api-item animate-on-scroll">
                     <span class="api-name">essai script</span>
-                    <span class="api-desc">Generate voiceover scripts with two-pass AI analysis. Options: <code>--input</code>, <code>--output</code>, <code>--context</code> (control length, tone, audience), <code>--model</code> (default: gemini-3-pro-preview).</span>
+                    <span class="api-desc">Generate voiceover scripts with two-pass AI analysis. Accepts PDF, PPTX, or image folder. PPTX slide notes are used directly if present. Options: <code>--input</code>, <code>--output</code>, <code>--context</code>, <code>--model</code> (default: gemini-3-pro-preview).</span>
                 </div>
                 <div class="api-item animate-on-scroll">
                     <span class="api-name">essai audio</span>
@@ -1007,15 +1007,15 @@ main benefits: automation, insights, and scalability.
                 </div>
                 <div class="api-item animate-on-scroll">
                     <span class="api-name">essai localize</span>
-                    <span class="api-desc">Full localization pipeline: extract PDF, translate images, generate audio. Options: <code>--pdf</code>, <code>--script</code>, <code>--lang</code>, <code>--provider</code>.</span>
+                    <span class="api-desc">Full localization pipeline: extract PDF or PPTX, translate images, generate audio. Options: <code>--pdf</code> (accepts PDF or PPTX), <code>--script</code>, <code>--lang</code>, <code>--provider</code>.</span>
                 </div>
                 <div class="api-item animate-on-scroll">
                     <span class="api-name">essai video</span>
-                    <span class="api-desc">Generate video from slides and audio. Options: <code>--pdf</code>, <code>--context</code>, <code>--provider</code>, <code>--script-model</code>, <code>--audio-model</code>.</span>
+                    <span class="api-desc">Generate video from slides and audio. Accepts PDF or PPTX. Options: <code>--pdf</code> (accepts PDF or PPTX), <code>--context</code>, <code>--provider</code>, <code>--script-model</code>, <code>--audio-model</code>.</span>
                 </div>
                 <div class="api-item animate-on-scroll">
                     <span class="api-name">essai ppt</span>
-                    <span class="api-desc">Create PowerPoint from PDF or images. Options: <code>--input</code> for PDF or folder, <code>--script</code> to add speaker notes, <code>--keep-images</code> to retain extracted images.</span>
+                    <span class="api-desc">Create PowerPoint from PDF or images, or use PPTX as input for other commands. Options: <code>--input</code> for PDF, PPTX, or folder, <code>--script</code> to add speaker notes, <code>--keep-images</code>.</span>
                 </div>
                 <div class="api-item animate-on-scroll">
                     <span class="api-name">essai models</span>
@@ -1064,9 +1064,10 @@ main benefits: automation, insights, and scalability.
 <span class="code-keyword">$</span> essai pdf presentation.pdf --dpi 200
 <span class="code-string">Extracted 15 pages to ./presentation_pages/</span>
 
-<span class="code-comment"># Generate a voiceover script from slides</span>
-<span class="code-keyword">$</span> essai script --input presentation.pdf --context <span class="code-string">"AI workshop"</span>
-<span class="code-string">Generated script saved to ./voiceover.md</span>
+<span class="code-comment"># Generate a voiceover script from PDF or PPTX</span>
+<span class="code-keyword">$</span> essai script --input presentation.pptx
+<span class="code-string">PPTX contains slide notes — using them as voiceover script</span>
+<span class="code-string">Generated voiceover script from notes: presentation_voiceover.md</span>
 
 <span class="code-comment"># Generate audio with Gemini TTS</span>
 <span class="code-keyword">$</span> essai audio --script voiceover.md --voice Kore
@@ -1081,7 +1082,14 @@ main benefits: automation, insights, and scalability.
 <span class="code-keyword">$</span> essai audio --script voiceover.md --provider coqui --voice female
 <span class="code-string">Generated 15 audio files in ./audio/</span>
 
-<span class="code-comment"># Generate video with custom models</span>
+<span class="code-comment"># Generate video from PPTX (notes become voiceover automatically)</span>
+<span class="code-keyword">$</span> essai video --pdf presentation.pptx
+<span class="code-string">Step 1: Extracting PPTX slides...</span>
+<span class="code-string">Step 2: Using PPTX slide notes as voiceover script...</span>
+<span class="code-string">Step 3: Generating audio...</span>
+<span class="code-string">Step 4: Creating video...</span>
+
+<span class="code-comment"># Or from PDF with custom models</span>
 <span class="code-keyword">$</span> essai video --pdf presentation.pdf --audio-model gemini-2.5-flash-preview-tts
 <span class="code-string">Step 1: Extracting PDF pages...</span>
 <span class="code-string">Step 2: Generating voiceover script...</span>
