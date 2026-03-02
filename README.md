@@ -4,17 +4,19 @@
 [![Tests](https://github.com/yanndebray/montaigne/actions/workflows/test.yml/badge.svg)](https://github.com/yanndebray/montaigne/actions/workflows/test.yml)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/yanndebray/montaigne/blob/main/LICENSE)
 
-Media processing toolkit for presentation localization using Google Gemini AI.
+A Python toolkit for presentation animation. Extract slides, translate visuals, generate voiceovers, and create videos—powered by Google Gemini AI, ElevenLabs, and local TTS.
 
 ## Features
 
-- **PDF Extraction**: Convert PDF pages to images
-- **Script Generation**: Generate voiceover scripts from slides using AI
-- **Image Translation**: Translate text in images to any language
-- **Audio Generation**: Generate voiceover audio from scripts using TTS
-- **PowerPoint Generation**: Create PPTX from PDF or images with speaker notes
-- **Video Generation**: Combine slides and audio into MP4 videos
-- **Video/Audio Annotation**: Frame-accurate annotation tool with waveform visualization
+- **PDF Extraction**: Convert PDF presentations to high-quality images. Configurable DPI settings (150-300+) with PNG or JPG output formats.
+- **Script Generation**: Generate professional voiceover scripts using a two-pass AI approach. Holistic context analysis, narrative arc awareness, and production notes with pronunciation guides.
+- **Image Translation**: Translate text in images to any target language. Context-aware translations powered by Gemini.
+- **Voice Synthesis**: Generate natural voiceover audio from scripts. Three providers: Gemini TTS (cloud), ElevenLabs (premium voices), or Coqui XTTS-v2 (local, no API key required).
+- **Video Generation**: Combine translated slides and voiceover audio into polished videos. Configurable resolution up to 1920x1080.
+- **PowerPoint Export**: Create PPTX presentations from PDF or images. Optionally add voiceover scripts as speaker notes for each slide.
+- **Cloud Deployment**: Offload video generation to Google Cloud Run. Upload PDFs, process in the cloud, and download results with secure signed URLs.
+- **Model Configuration**: Customize Gemini models for each operation. Use `--model` flags to switch between flash and pro models based on your needs.
+- **Video Annotation**: Frame-accurate video and audio annotation tool. Add timestamps, export to WebVTT/SRT formats for captions. Waveform visualization with click-to-seek.
 - **Web Editor**: Streamlit-based slide editor for managing presentations
 
 ## Installation

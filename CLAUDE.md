@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Montaigne is a media processing toolkit for presentation localization using Google Gemini AI. It provides a CLI tool (`essai`) that handles:
+Montaigne is a Python toolkit for presentation animation using Google Gemini AI. It provides a CLI tool (`essai`) that handles:
 - PDF extraction to images
 - AI-powered voiceover script generation from slides
 - Image translation to different languages
