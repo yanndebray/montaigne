@@ -14,6 +14,7 @@ from montaigne.ppt import (
     extract_pptx_notes,
     extract_pptx_pages,
     notes_to_voiceover_script,
+    pptx_has_notes,
 )
 
 
@@ -106,6 +107,25 @@ class TestExtractPptxNotes:
     def test_nonexistent_file_raises(self, temp_dir):
         with pytest.raises(FileNotFoundError):
             extract_pptx_notes(temp_dir / "nope.pptx")
+
+
+# ---------------------------------------------------------------------------
+# Tests: pptx_has_notes
+# ---------------------------------------------------------------------------
+
+
+class TestPptxHasNotes:
+    def test_true_when_notes_present(self, temp_dir):
+        pptx_path = _make_pptx_with_notes(temp_dir / "with_notes.pptx", ["Hello", "", "World"])
+        assert pptx_has_notes(pptx_path) is True
+
+    def test_false_when_no_notes(self, temp_dir):
+        pptx_path = _make_pptx_with_notes(temp_dir / "empty.pptx", ["", "", ""])
+        assert pptx_has_notes(pptx_path) is False
+
+    def test_false_when_only_whitespace(self, temp_dir):
+        pptx_path = _make_pptx_with_notes(temp_dir / "ws.pptx", ["  ", "\n", ""])
+        assert pptx_has_notes(pptx_path) is False
 
 
 # ---------------------------------------------------------------------------

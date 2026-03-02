@@ -172,6 +172,11 @@ def extract_pptx_notes(pptx_path: Path) -> List[str]:
     return notes
 
 
+def pptx_has_notes(pptx_path: Path) -> bool:
+    """Return True if the PPTX has at least one slide with non-empty notes."""
+    return any(n.strip() for n in extract_pptx_notes(pptx_path))
+
+
 def notes_to_voiceover_script(
     notes: List[str], output_path: Path, title: str = "Presentation"
 ) -> Path:

@@ -287,7 +287,12 @@ def generate_video_from_pdf(
     # Step 1: Extract pages (PDF or PPTX)
     images_dir = pdf_path.parent / f"{base_name}_images"
     if pdf_path.suffix.lower() == ".pptx":
-        from .ppt import extract_pptx_pages, extract_pptx_notes, notes_to_voiceover_script
+        from .ppt import (
+            extract_pptx_pages,
+            extract_pptx_notes,
+            pptx_has_notes,
+            notes_to_voiceover_script,
+        )
 
         logger.info("Step 1: Extracting PPTX slides...")
         extract_pptx_pages(
@@ -298,12 +303,11 @@ def generate_video_from_pdf(
         )
 
         # Auto-generate script from notes if no script provided
-        if script_path is None:
+        if script_path is None and pptx_has_notes(pdf_path):
+            logger.info("Step 2: Using PPTX slide notes as voiceover script...")
             notes = extract_pptx_notes(pdf_path)
-            if any(n.strip() for n in notes):
-                logger.info("Step 2: Using PPTX slide notes as voiceover script...")
-                script_path = pdf_path.parent / f"{base_name}_voiceover.md"
-                notes_to_voiceover_script(notes, script_path, title=base_name)
+            script_path = pdf_path.parent / f"{base_name}_voiceover.md"
+            notes_to_voiceover_script(notes, script_path, title=base_name)
     else:
         from .pdf import extract_pdf_pages
 
