@@ -135,12 +135,12 @@ def cmd_script(args):
 
     input_path = Path(args.input) if args.input else None
 
-    # Auto-detect PDF or images
+    # Auto-detect PDF, PPTX, or images
     if input_path is None:
         cwd = Path.cwd()
-        pdfs = list(cwd.glob("*.pdf"))
-        if pdfs:
-            input_path = pdfs[0]
+        presentations = list(cwd.glob("*.pdf")) + list(cwd.glob("*.pptx"))
+        if presentations:
+            input_path = presentations[0]
             logger.info("Auto-detected: %s", input_path.name)
         else:
             image_dirs = [d for d in cwd.iterdir() if d.is_dir() and "images" in d.name.lower()]
@@ -148,7 +148,7 @@ def cmd_script(args):
                 input_path = image_dirs[0]
                 logger.info("Auto-detected: %s", input_path.name)
             else:
-                logger.error("No PDF or image folder found. Use --input to specify one.")
+                logger.error("No PDF, PPTX, or image folder found. Use --input to specify one.")
                 return
 
     output_path = Path(args.output) if args.output else None
@@ -316,11 +316,11 @@ def cmd_ppt(args):
     # Auto-detect input
     if input_path is None:
         cwd = Path.cwd()
-        # First try to find a PDF
-        pdfs = list(cwd.glob("*.pdf"))
-        if pdfs:
-            input_path = pdfs[0]
-            logger.info("Auto-detected PDF: %s", input_path.name)
+        # First try to find a PDF or PPTX
+        presentations = list(cwd.glob("*.pdf")) + list(cwd.glob("*.pptx"))
+        if presentations:
+            input_path = presentations[0]
+            logger.info("Auto-detected: %s", input_path.name)
         else:
             # Try to find an images folder
             image_dirs = [d for d in cwd.iterdir() if d.is_dir() and "images" in d.name.lower()]
@@ -328,7 +328,7 @@ def cmd_ppt(args):
                 input_path = image_dirs[0]
                 logger.info("Auto-detected folder: %s", input_path.name)
             else:
-                logger.error("No PDF or images folder found. Use --input to specify one.")
+                logger.error("No PDF, PPTX, or images folder found. Use --input to specify one.")
                 return
 
     output_path = Path(args.output) if args.output else None
@@ -789,22 +789,34 @@ def cmd_localize(args):
 
     images_to_translate = []
 
-    # Step 1: Extract PDF if provided
+    # Step 1: Extract PDF/PPTX if provided
     if args.pdf:
         pdf_path = Path(args.pdf)
-        logger.info("Step 1: Extracting PDF pages...")
         images_dir = output_base / "source_images"
-        extracted = extract_pdf_pages(pdf_path, output_dir=images_dir, dpi=args.dpi)
+        if pdf_path.suffix.lower() == ".pptx":
+            from .ppt import extract_pptx_pages
+
+            logger.info("Step 1: Extracting PPTX slides...")
+            extracted = extract_pptx_pages(pdf_path, output_dir=images_dir, dpi=args.dpi)
+        else:
+            logger.info("Step 1: Extracting PDF pages...")
+            extracted = extract_pdf_pages(pdf_path, output_dir=images_dir, dpi=args.dpi)
         images_to_translate = extracted
     elif args.images:
         images_to_translate = [Path(args.images)]
     else:
-        # Auto-detect PDF or images
-        pdfs = list(project_dir.glob("*.pdf"))
-        if pdfs:
-            logger.info("Step 1: Auto-detected PDF: %s", pdfs[0].name)
+        # Auto-detect PDF, PPTX, or images
+        presentations = list(project_dir.glob("*.pdf")) + list(project_dir.glob("*.pptx"))
+        if presentations:
+            found = presentations[0]
+            logger.info("Step 1: Auto-detected: %s", found.name)
             images_dir = output_base / "source_images"
-            extracted = extract_pdf_pages(pdfs[0], output_dir=images_dir, dpi=args.dpi)
+            if found.suffix.lower() == ".pptx":
+                from .ppt import extract_pptx_pages
+
+                extracted = extract_pptx_pages(found, output_dir=images_dir, dpi=args.dpi)
+            else:
+                extracted = extract_pdf_pages(found, output_dir=images_dir, dpi=args.dpi)
             images_to_translate = extracted
 
     # Step 2: Translate images

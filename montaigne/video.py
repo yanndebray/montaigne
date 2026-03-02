@@ -275,7 +275,6 @@ def generate_video_from_pdf(
         add_branding: If True, add montaigne.cc logo to slides (default: True)
         logo_path: Optional path to logo image (default: montaigne amber logo)
     """
-    from .pdf import extract_pdf_pages
     from .scripts import generate_scripts
     from .audio import generate_audio
 
@@ -285,12 +284,33 @@ def generate_video_from_pdf(
     # Use the provider in the log statement
     logger.info("=== Generating Video from %s (%s) ===", pdf_path.name, provider.upper())
 
-    # Step 1: Extract PDF pages
-    logger.info("Step 1: Extracting PDF pages...")
+    # Step 1: Extract pages (PDF or PPTX)
     images_dir = pdf_path.parent / f"{base_name}_images"
-    extract_pdf_pages(
-        pdf_path, output_dir=images_dir, add_branding=add_branding, logo_path=logo_path
-    )
+    if pdf_path.suffix.lower() == ".pptx":
+        from .ppt import extract_pptx_pages, extract_pptx_notes, notes_to_voiceover_script
+
+        logger.info("Step 1: Extracting PPTX slides...")
+        extract_pptx_pages(
+            pdf_path,
+            output_dir=images_dir,
+            add_branding=add_branding,
+            logo_path=logo_path,
+        )
+
+        # Auto-generate script from notes if no script provided
+        if script_path is None:
+            notes = extract_pptx_notes(pdf_path)
+            if any(n.strip() for n in notes):
+                logger.info("Step 2: Using PPTX slide notes as voiceover script...")
+                script_path = pdf_path.parent / f"{base_name}_voiceover.md"
+                notes_to_voiceover_script(notes, script_path, title=base_name)
+    else:
+        from .pdf import extract_pdf_pages
+
+        logger.info("Step 1: Extracting PDF pages...")
+        extract_pdf_pages(
+            pdf_path, output_dir=images_dir, add_branding=add_branding, logo_path=logo_path
+        )
 
     # Step 2: Generate script (Pass the context here)
     if script_path is None:

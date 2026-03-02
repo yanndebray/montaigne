@@ -436,8 +436,28 @@ def generate_scripts(
 
     input_path = Path(input_path)
 
+    # Handle PPTX input — extract pages and use notes if available
+    if input_path.suffix.lower() == ".pptx":
+        from .ppt import extract_pptx_pages, extract_pptx_notes, notes_to_voiceover_script
+
+        logger.info("Extracting pages from PPTX: %s", input_path.name)
+        images_dir = input_path.parent / f"{input_path.stem}_images"
+        images = extract_pptx_pages(input_path, output_dir=images_dir)
+        base_name = input_path.stem
+
+        # If slides have notes, use them directly as the voiceover script
+        notes = extract_pptx_notes(input_path)
+        if any(n.strip() for n in notes):
+            logger.info("PPTX contains slide notes — using them as voiceover script")
+            if output_path is None:
+                output_path = input_path.parent / f"{base_name}_voiceover.md"
+            return notes_to_voiceover_script(notes, output_path, title=base_name)
+
+        # No notes — fall through to Gemini image analysis below
+        logger.info("PPTX has no slide notes — generating scripts with Gemini")
+
     # Handle PDF input
-    if input_path.suffix.lower() == ".pdf":
+    elif input_path.suffix.lower() == ".pdf":
         logger.info("Extracting pages from PDF: %s", input_path.name)
         images_dir = input_path.parent / f"{input_path.stem}_images"
         images = extract_pdf_pages(input_path, output_dir=images_dir)
